@@ -1,7 +1,8 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `src/main/kotlin/dev/agent/` contains the IntelliJ plugin source (UI, PSI helpers, OpenCode adapter).
+- `src/main/kotlin/dev/agent/` contains core logic (LLM adapter, prompts, orchestrator).
+- `src/main/kotlin/dev/agent/plugin/` contains the IntelliJ plugin source (UI, PSI helpers, IDE runner/inserter).
 - `src/main/resources/META-INF/plugin.xml` declares plugin metadata and extensions.
 - `src/test/kotlin/dev/agent/` holds unit tests.
 - `test-integration/` is a separate Gradle project for local-only integration tests and coverage; it is gitignored.

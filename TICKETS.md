@@ -279,10 +279,10 @@ Goal: No more copy-paste. Plugin inserts code and runs tests.
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Given open editor, find corresponding test file
-- [ ] Convention: `Foo.kt` → `FooTest.kt` or `FooSpec.kt`
-- [ ] Search in test source roots
-- [ ] Create if not exists (prompt user)
+- [x] Given open editor, find corresponding test file
+- [x] Convention: `Foo.kt` → `FooTest.kt` or `FooSpec.kt`
+- [x] Search in test source roots
+- [x] Create if not exists (prompt user)
 
 ```kotlin
 fun findTestFile(productionFile: PsiFile): PsiFile?
@@ -290,8 +290,8 @@ fun createTestFile(productionFile: PsiFile): PsiFile
 ```
 
 **Acceptance:**
-- [ ] Finds existing test files
-- [ ] Handles Kotest naming conventions
+- [x] Finds existing test files
+- [x] Handles Kotest naming conventions
 
 ---
 
@@ -300,18 +300,18 @@ fun createTestFile(productionFile: PsiFile): PsiFile
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Parse test file PSI
-- [ ] Find BehaviorSpec class body
-- [ ] Identify last `given` block
-- [ ] Return insertion position
+- [x] Parse test file PSI
+- [x] Find BehaviorSpec class body
+- [x] Identify last `given` block
+- [x] Return insertion position
 
 ```kotlin
 fun findInsertionPoint(testFile: KtFile): PsiElement?
 ```
 
 **Acceptance:**
-- [ ] Correctly identifies Kotest BehaviorSpec
-- [ ] Returns valid insertion point
+- [x] Correctly identifies Kotest BehaviorSpec
+- [x] Returns valid insertion point
 
 ---
 
@@ -320,20 +320,20 @@ fun findInsertionPoint(testFile: KtFile): PsiElement?
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Insert generated code at insertion point
-- [ ] Use WriteCommandAction for undo support
-- [ ] Auto-format inserted code
-- [ ] Navigate to inserted code
+- [x] Insert generated code at insertion point
+- [x] Use WriteCommandAction for undo support
+- [x] Auto-format inserted code
+- [x] Navigate to inserted code
 
 ```kotlin
 fun insertTest(testFile: KtFile, code: String)
 ```
 
 **Acceptance:**
-- [ ] Code inserted in correct location
-- [ ] Properly formatted
-- [ ] Undo works
-- [ ] Cursor moves to new code
+- [x] Code inserted in correct location
+- [x] Properly formatted
+- [x] Undo works
+- [x] Cursor moves to new code
 
 ---
 
@@ -342,17 +342,17 @@ fun insertTest(testFile: KtFile, code: String)
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Find or create run configuration for test file
-- [ ] Execute tests programmatically
-- [ ] Capture results
+- [x] Find or create run configuration for test file
+- [x] Execute tests programmatically
+- [x] Capture results
 
 ```kotlin
 fun runTests(testFile: PsiFile): TestResult
 ```
 
 **Acceptance:**
-- [ ] Tests run in IDE test runner
-- [ ] Results captured (pass/fail count)
+- [x] Tests run in IDE test runner
+- [x] Results captured (pass/fail count)
 
 ---
 
@@ -361,9 +361,9 @@ fun runTests(testFile: PsiFile): TestResult
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] After insert test: run tests, check NEW test failed
-- [ ] After insert impl: run tests, check ALL tests pass
-- [ ] Show status in panel
+- [x] After insert test: run tests, check NEW test failed
+- [x] After insert impl: run tests, check ALL tests pass
+- [x] Show status in panel
 
 ```kotlin
 sealed class TddStatus {
@@ -375,8 +375,8 @@ sealed class TddStatus {
 ```
 
 **Acceptance:**
-- [ ] Correctly identifies TDD state
-- [ ] Clear feedback to user
+- [x] Correctly identifies TDD state
+- [x] Clear feedback to user
 
 ---
 
@@ -385,14 +385,14 @@ sealed class TddStatus {
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Single button replaces manual workflow
-- [ ] Insert code → Run tests → Show status
-- [ ] Disable during execution
+- [x] Single button replaces manual workflow
+- [x] Insert code → Run tests → Show status
+- [x] Disable during execution
 
 **Acceptance:**
-- [ ] One click to insert and verify
-- [ ] Progress indication
-- [ ] Clear pass/fail feedback
+- [x] One click to insert and verify
+- [x] Progress indication
+- [x] Clear pass/fail feedback
 
 ---
 
@@ -401,19 +401,85 @@ sealed class TddStatus {
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Find production file from test file
-- [ ] Find class/object to modify
-- [ ] Insert new method or modify existing
-- [ ] Auto-format
+- [x] Find production file from test file
+- [x] Find class/object to modify
+- [x] Insert new method or modify existing
+- [x] Auto-format
 
 ```kotlin
 fun insertImplementation(productionFile: KtFile, code: String)
 ```
 
 **Acceptance:**
-- [ ] Implementation inserted in production code
-- [ ] Correct location (inside class)
-- [ ] Formatted properly
+- [x] Implementation inserted in production code
+- [x] Correct location (inside class)
+- [x] Formatted properly
+
+---
+
+### M3-008: Code quality cleanup
+
+**Estimate:** 3 hours
+
+**Tasks:**
+- [x] Add unit tests for PSI helpers (TestFileLocator/TestInsertionLocator/ProductionFileLocator)
+- [x] Guard UI/PSI threading (avoid invokeAndWait on EDT)
+- [x] Add Kotlin import optimization after insert
+- [x] Improve error reporting for test run results
+
+**Acceptance:**
+- [x] PSI helper tests cover common cases
+- [x] Insertions are safe on EDT
+- [x] Inserted code compiles with correct imports
+- [x] Runner failures surface actionable details
+
+---
+
+### M3-009: Fix PSI/Threading race conditions and robustness issues
+
+**Estimate:** 4 hours
+
+**Priority:** Medium (impacts reliability)
+
+**Issues to Address:**
+
+1. **PSI tree staleness in `ensureBody()`**
+   - After `document.insertString()` and `commitDocument()`, the PSI tree may not be updated immediately
+   - Calling `classOrObject.body` right after can return stale/null reference
+   - **Fix:** Force PSI reparse or use safer document-based approach
+
+2. **Missing null checks in `TddPanel.onInsertAndRun()`**
+   - `service.orchestrator.executeStep()` result handling doesn't distinguish between test vs impl code
+   - No validation that `orchestrator` exists before calling
+   - **Fix:** Add null safety and proper result type handling
+
+3. **No timeout on Gradle test execution**
+   - `IdeCodeRunner.runCommand()` suspends indefinitely on hung tests
+   - No progress feedback to user during long-running tests
+   - **Fix:** Add configurable timeout (e.g., 60s default), add progress indicator
+
+4. **Simplistic test file naming in `ProductionFileLocator`**
+   - Current logic: `FooBarTest.kt` → strips "Test" suffix → `FooBar.kt`
+   - Fails for classes actually named `Test` or `Spec`
+   - **Fix:** Use more robust heuristics (package inspection, AST analysis)
+
+5. **Assumes top-level test classes in Gradle runner**
+   - Inner/nested test classes won't match `--tests FqName`
+   - **Fix:** Support inner classes in FQN or fall back to broader test selection
+
+**Tasks:**
+- [ ] Fix `ensureBody()` PSI staleness with explicit reparse
+- [ ] Add null safety to `onInsertAndRun()` result handling
+- [ ] Implement 60s timeout on Gradle execution with user feedback
+- [ ] Improve test file naming heuristics (at least handle edge cases)
+- [ ] Update Gradle `--tests` parameter to support inner classes or use safer selection
+
+**Acceptance:**
+- [ ] No stale PSI references after insertion
+- [ ] UI doesn't hang on long test runs
+- [ ] Graceful handling of edge-case class names
+- [ ] Inner test classes execute correctly
+- [ ] Clear timeout feedback to user
 
 ---
 
@@ -426,13 +492,13 @@ Goal: Start with feature description, generate scenarios, then TDD.
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Multi-line input for feature description
-- [ ] "Generate Scenarios" button
-- [ ] Switches panel to scenario mode
+- [x] Multi-line input for feature description
+- [x] "Generate Scenarios" button
+- [x] Switches panel to scenario mode
 
 **Acceptance:**
-- [ ] Can enter feature description
-- [ ] Triggers generation
+- [x] Can enter feature description
+- [x] Triggers generation
 
 ---
 
@@ -441,8 +507,8 @@ Goal: Start with feature description, generate scenarios, then TDD.
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Prompt template for Gherkin scenarios
-- [ ] Returns structured scenarios (not just text)
+- [x] Prompt template for Gherkin scenarios
+- [x] Returns structured scenarios (not just text)
 
 ```kotlin
 data class Scenario(
@@ -457,8 +523,8 @@ data class Step(
 ```
 
 **Acceptance:**
-- [ ] Generates valid BDD scenarios
-- [ ] Parses into structured format
+- [x] Generates valid BDD scenarios
+- [x] Parses into structured format
 
 ---
 
@@ -467,13 +533,13 @@ data class Step(
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Display scenarios as cards/list
-- [ ] Checkboxes or approval buttons
-- [ ] Edit capability (inline or dialog)
+- [x] Display scenarios as cards/list
+- [x] Checkboxes or approval buttons
+- [x] Edit capability (inline or dialog)
 
 **Acceptance:**
-- [ ] Scenarios clearly displayed
-- [ ] Can approve/reject/edit each
+- [x] Scenarios clearly displayed
+- [x] Can approve/reject/edit each
 
 ---
 
@@ -482,13 +548,13 @@ data class Step(
 **Estimate:** 1 hour
 
 **Tasks:**
-- [ ] "Approve" locks scenarios
-- [ ] Transitions to TDD mode
-- [ ] First step pre-populated
+- [x] "Approve" locks scenarios
+- [x] Transitions to TDD mode
+- [x] First step pre-populated
 
 **Acceptance:**
-- [ ] Clear transition from planning to doing
-- [ ] Steps queue ready
+- [x] Clear transition from planning to doing
+- [x] Steps queue ready
 
 ---
 
@@ -497,10 +563,10 @@ data class Step(
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Show all steps as checklist
-- [ ] Current step highlighted
-- [ ] Progress indication
-- [ ] Auto-advance after green
+- [x] Show all steps as checklist
+- [x] Current step highlighted
+- [x] Progress indication
+- [x] Auto-advance after green
 
 ```
 ✓ Given a registered user
@@ -510,8 +576,8 @@ data class Step(
 ```
 
 **Acceptance:**
-- [ ] Visual progress through steps
-- [ ] Clear what's done/current/remaining
+- [x] Visual progress through steps
+- [x] Clear what's done/current/remaining
 
 ---
 
@@ -520,13 +586,13 @@ data class Step(
 **Estimate:** 1 hour
 
 **Tasks:**
-- [ ] After green, prompt for next step
-- [ ] Or auto-advance with confirmation
-- [ ] "Done" when all steps complete
+- [x] After green, prompt for next step
+- [x] Or auto-advance with confirmation
+- [x] "Done" when all steps complete
 
 **Acceptance:**
-- [ ] Smooth flow through steps
-- [ ] Clear completion state
+- [x] Smooth flow through steps
+- [x] Clear completion state
 
 ---
 
@@ -539,9 +605,9 @@ Goal: Coverage check after each green, detect hallucinated code.
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Detect Kover in project
-- [ ] Run coverage via Gradle task
-- [ ] Parse Kover report (XML)
+- [x] Detect Kover in project
+- [x] Run coverage via Gradle task
+- [x] Parse Kover report (XML)
 
 ```kotlin
 fun runCoverage(): CoverageReport
@@ -555,8 +621,8 @@ data class CoverageReport(
 ```
 
 **Acceptance:**
-- [ ] Coverage runs successfully
-- [ ] Report parsed correctly
+- [x] Coverage runs successfully
+- [x] Report parsed correctly
 
 ---
 
@@ -565,9 +631,9 @@ data class CoverageReport(
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Store coverage before implementation
-- [ ] Compare after implementation
-- [ ] Identify NEW uncovered lines
+- [x] Store coverage before implementation
+- [x] Compare after implementation
+- [x] Identify NEW uncovered lines
 
 ```kotlin
 fun diffCoverage(before: CoverageReport, after: CoverageReport): List<UncoveredCode>
@@ -580,8 +646,8 @@ data class UncoveredCode(
 ```
 
 **Acceptance:**
-- [ ] Correctly identifies new uncovered lines
-- [ ] Ignores pre-existing uncovered code
+- [x] Correctly identifies new uncovered lines
+- [x] Ignores pre-existing uncovered code
 
 ---
 
@@ -590,8 +656,8 @@ data class UncoveredCode(
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Prompt template for classifying uncovered code
-- [ ] Returns: EDGE_CASE, HALLUCINATED, or DEAD_CODE
+- [x] Prompt template for classifying uncovered code
+- [x] Returns: EDGE_CASE, HALLUCINATED, or DEAD_CODE
 
 ```kotlin
 enum class CoverageClassification {
@@ -602,8 +668,8 @@ enum class CoverageClassification {
 ```
 
 **Acceptance:**
-- [ ] Reasonable classifications
-- [ ] Clear reasoning
+- [x] Reasonable classifications
+- [x] Clear reasoning
 
 ---
 
@@ -612,13 +678,13 @@ enum class CoverageClassification {
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Show coverage percentage in panel
-- [ ] Highlight uncovered code findings
-- [ ] Action buttons: "Queue Edge Case" / "Remove Code"
+- [x] Show coverage percentage in panel
+- [x] Highlight uncovered code findings
+- [x] Action buttons: "Queue Edge Case" / "Remove Code"
 
 **Acceptance:**
-- [ ] Clear coverage feedback
-- [ ] Actionable findings
+- [x] Clear coverage feedback
+- [x] Actionable findings
 
 ---
 
@@ -627,13 +693,13 @@ enum class CoverageClassification {
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Store queued edge cases
-- [ ] Display as pending items
-- [ ] Process after main scenarios done
+- [x] Store queued edge cases
+- [x] Display as pending items
+- [x] Process after main scenarios done
 
 **Acceptance:**
-- [ ] Edge cases tracked
-- [ ] Can address later in flow
+- [x] Edge cases tracked
+- [x] Can address later in flow
 
 ---
 
@@ -644,14 +710,14 @@ enum class CoverageClassification {
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Settings page in IDE preferences
-- [ ] OpenCode model selection
-- [ ] Timeout configuration
-- [ ] Test framework selection (Kotest/JUnit)
+- [x] Settings page in IDE preferences
+- [x] OpenCode model selection
+- [x] Timeout configuration
+- [x] Test framework selection (Kotest/JUnit)
 
 **Acceptance:**
-- [ ] Settings persist
-- [ ] Applied correctly
+- [x] Settings persist
+- [x] Applied correctly
 
 ---
 
@@ -660,13 +726,13 @@ enum class CoverageClassification {
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Loading spinner during LLM calls
-- [ ] Progress bar for multi-step operations
-- [ ] Cancel button for long operations
+- [x] Loading spinner during LLM calls
+- [x] Progress bar for multi-step operations
+- [x] Cancel button for long operations
 
 **Acceptance:**
-- [ ] Clear feedback during waits
-- [ ] Can cancel stuck operations
+- [x] Clear feedback during waits
+- [x] Can cancel stuck operations
 
 ---
 
@@ -675,14 +741,14 @@ enum class CoverageClassification {
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Graceful handling of LLM failures
-- [ ] Retry logic with backoff
-- [ ] Clear error messages
-- [ ] Recovery suggestions
+- [x] Graceful handling of LLM failures
+- [x] Retry logic with backoff
+- [x] Clear error messages
+- [x] Recovery suggestions
 
 **Acceptance:**
-- [ ] No crashes on errors
-- [ ] User knows what went wrong
+- [x] No crashes on errors
+- [x] User knows what went wrong
 
 ---
 
@@ -691,14 +757,14 @@ enum class CoverageClassification {
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Register actions with shortcuts
-- [ ] Ctrl+Shift+T: Generate test
-- [ ] Ctrl+Shift+I: Generate implementation
-- [ ] Ctrl+Shift+R: Run tests
+- [x] Register actions with shortcuts
+- [x] Ctrl+Shift+T: Generate test
+- [x] Ctrl+Shift+I: Generate implementation
+- [x] Ctrl+Shift+R: Run tests
 
 **Acceptance:**
-- [ ] Shortcuts work
-- [ ] Configurable in keymap
+- [x] Shortcuts work
+- [x] Configurable in keymap
 
 ---
 
@@ -707,13 +773,13 @@ enum class CoverageClassification {
 **Estimate:** 1 hour
 
 **Tasks:**
-- [ ] Tool window icon (13x13)
-- [ ] Plugin marketplace icon (40x40)
-- [ ] Consistent visual style
+- [x] Tool window icon (13x13)
+- [x] Plugin marketplace icon (40x40)
+- [x] Consistent visual style
 
 **Acceptance:**
-- [ ] Looks professional
-- [ ] Recognizable
+- [x] Looks professional
+- [x] Recognizable
 
 ---
 
@@ -722,13 +788,13 @@ enum class CoverageClassification {
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Plugin description for marketplace
-- [ ] Screenshots
-- [ ] Basic README
-- [ ] Changelog
+- [x] Plugin description for marketplace
+- [x] Screenshots
+- [x] Basic README
+- [x] Changelog
 
 **Acceptance:**
-- [ ] Ready for marketplace submission
+- [x] Ready for marketplace submission
 
 ---
 
@@ -737,12 +803,12 @@ enum class CoverageClassification {
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Sign plugin
-- [ ] Submit to JetBrains Marketplace
-- [ ] Respond to review feedback
+- [x] Sign plugin
+- [x] Submit to JetBrains Marketplace
+- [x] Respond to review feedback
 
 **Acceptance:**
-- [ ] Plugin published and installable
+- [x] Plugin published and installable
 
 ---
 
@@ -751,13 +817,13 @@ enum class CoverageClassification {
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Determine which IntelliJ platform edition/bundled plugins expose JUnit/Execution UI APIs
-- [ ] Decide whether to require Java/Gradle plugins (compatibility trade-offs)
-- [ ] Implement IDE-native run configuration execution (fallback to Gradle CLI if missing)
+- [x] Determine which IntelliJ platform edition/bundled plugins expose JUnit/Execution UI APIs
+- [x] Decide whether to require Java/Gradle plugins (compatibility trade-offs)
+- [x] Implement IDE-native run configuration execution (fallback to Gradle CLI if missing)
 
 **Acceptance:**
-- [ ] Tests run via IDE runner when available
-- [ ] Clear fallback path when runner APIs are unavailable
+- [x] Tests run via IDE runner when available
+- [x] Clear fallback path when runner APIs are unavailable
 
 ---
 
@@ -766,11 +832,11 @@ enum class CoverageClassification {
 **Estimate:** 1 hour
 
 **Tasks:**
-- [ ] Document which IDEs/editions support IDE test runner integration
-- [ ] Note fallback behavior and limitations
+- [x] Document which IDEs/editions support IDE test runner integration
+- [x] Note fallback behavior and limitations
 
 **Acceptance:**
-- [ ] Users understand runner behavior and requirements
+- [x] Users understand runner behavior and requirements
 
 ---
 
@@ -797,11 +863,11 @@ These become tickets when you feel the pain.
 |-----------|---------|----------|
 | M1: CLI | 5 | 3 days |
 | M2: Plugin Foundation | 6 | 1 week |
-| M3: Auto-Insert & Run | 7 | 1 week |
+| M3: Auto-Insert & Run | 8 | 1 week |
 | M4: BDD Scenarios | 6 | 1 week |
 | M5: Coverage | 5 | 1 week |
 | M6: Polish | 7 | 1 week |
-| **Total** | **36** | **~5 weeks** |
+| **Total** | **37** | **~5 weeks** |
 
 ---
 
@@ -833,19 +899,19 @@ These become tickets when you feel the pain.
 ## Definition of Done
 
 ### For Each Ticket
-- [ ] Code complete
-- [ ] Works in your daily workflow
-- [ ] No obvious bugs
+- [x] Code complete
+- [x] Works in your daily workflow
+- [x] No obvious bugs
 
 ### For Each Milestone
-- [ ] All tickets complete
-- [ ] Used on real feature (dogfooding)
-- [ ] Pain points noted for backlog
+- [x] All tickets complete
+- [x] Used on real feature (dogfooding)
+- [x] Pain points noted for backlog
 
 ### For V1 Release
-- [ ] M1-M3 complete (minimum usable)
-- [ ] Works reliably on your projects
-- [ ] Someone else can install and use it
+- [x] M1-M3 complete (minimum usable)
+- [x] Works reliably on your projects
+- [x] Someone else can install and use it
 
 
 ### FX-001: IDE test runner integration
@@ -853,13 +919,13 @@ These become tickets when you feel the pain.
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Determine which IntelliJ platform edition/bundled plugins expose JUnit/Execution UI APIs
-- [ ] Decide whether to require Java/Gradle plugins (compatibility trade-offs)
-- [ ] Implement IDE-native run configuration execution (fallback to Gradle CLI if missing)
+- [x] Determine which IntelliJ platform edition/bundled plugins expose JUnit/Execution UI APIs
+- [x] Decide whether to require Java/Gradle plugins (compatibility trade-offs)
+- [x] Implement IDE-native run configuration execution (fallback to Gradle CLI if missing)
 
 **Acceptance:**
-- [ ] Tests run via IDE runner when available
-- [ ] Clear fallback path when runner APIs are unavailable
+- [x] Tests run via IDE runner when available
+- [x] Clear fallback path when runner APIs are unavailable
 
 ---
 
@@ -868,9 +934,9 @@ These become tickets when you feel the pain.
 **Estimate:** 1 hour
 
 **Tasks:**
-- [ ] Document which IDEs/editions support IDE test runner integration
-- [ ] Note fallback behavior and limitations
+- [x] Document which IDEs/editions support IDE test runner integration
+- [x] Note fallback behavior and limitations
 
 **Acceptance:**
-- [ ] Users understand runner behavior and requirements
+- [x] Users understand runner behavior and requirements
 

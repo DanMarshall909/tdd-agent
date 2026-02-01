@@ -54,14 +54,12 @@ This plugin enforces:
 
 ### Prerequisites
 - IntelliJ IDEA 2023.3+
-- [OpenCode CLI](https://github.com/anthropics/opencode) installed
+- OpenCode CLI installed
 
 ### Install Plugin
-```
-Settings → Plugins → Marketplace → Search "TDD Agent"
-```
 
-Or install from disk:
+Marketplace install is planned for M6. For now, build and install from disk.
+
 ```
 Settings → Plugins → ⚙️ → Install Plugin from Disk → tdd-agent.zip
 ```
@@ -70,11 +68,11 @@ Settings → Plugins → ⚙️ → Install Plugin from Disk → tdd-agent.zip
 
 1. Open tool window: `View → Tool Windows → TDD Agent`
 2. Enter a BDD step: "user with expired password cannot login"
-3. Click "Generate Test" or press `Ctrl+Shift+T`
+3. Click "Generate Test"
 4. Review generated test
 5. Click "Insert & Run"
 6. Verify test fails (red)
-7. Click "Generate Impl" or press `Ctrl+Shift+I`
+7. Click "Generate Implementation"
 8. Review generated implementation
 9. Click "Insert & Run"
 10. Verify all tests pass (green)
@@ -96,28 +94,19 @@ class UserServiceTest : BehaviorSpec({
 })
 ```
 
-Also supports JUnit 5 if preferred.
+JUnit 5 support is planned (M6).
 
 ## Keyboard Shortcuts
 
-| Action | Shortcut |
-|--------|----------|
-| Generate Test | `Ctrl+Shift+T` |
-| Generate Implementation | `Ctrl+Shift+I` |
-| Insert & Run | `Ctrl+Shift+R` |
-
-Customise in `Settings → Keymap → TDD Agent`.
+Planned for M6.
 
 ## Configuration
 
-`Settings → Tools → TDD Agent`
+Planned for M6.
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Model | claude-sonnet | OpenCode model |
-| Timeout | 5 min | LLM call timeout |
-| Test Framework | Kotest | Kotest or JUnit 5 |
-| Auto-format | true | Format inserted code |
+## Test Runner
+
+Current implementation runs Gradle CLI tests for the generated test class. IDE-native test runner integration is tracked in M6-008.
 
 ## Project Setup
 
@@ -141,7 +130,7 @@ tasks.withType<Test> {
 ```kotlin
 // build.gradle.kts
 plugins {
-    id("org.jetbrains.kotlinx.kover") version "0.7.5"
+    id("org.jetbrains.kotlinx.kover") version "0.9.5"
 }
 ```
 
@@ -156,10 +145,10 @@ plugins {
 │         │                │                │             │
 │         ▼                ▼                ▼             │
 │  ┌──────────────────────────────────────────────────┐  │
-│  │              IntelliJ Platform APIs              │  │
-│  │  • PSI (code structure)                          │  │
-│  │  • Run configurations                            │  │
-│  │  • Editor operations                             │  │
+│  │              IntelliJ Platform APIs              │
+│  │  • PSI (code structure)                          │
+│  │  • Editor operations                             │
+│  │  • Notifications                                 │
 │  └──────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────┘
                           │
@@ -180,6 +169,7 @@ plugins {
 - Kotlin only (for now)
 - Requires OpenCode CLI
 - Single project focus
+- IDE test runner integration pending
 
 ## Roadmap
 
@@ -195,7 +185,7 @@ plugins {
 
 ### Prerequisites
 
-1. **Java 11+** (required for builds)
+1. **Java 21** (required for builds)
    ```bash
    winget install EclipseAdoptium.Temurin.21.JDK
    ```
@@ -250,11 +240,11 @@ git commit -m "M1-001: Initial project scaffold"
 
 ```
 tdd-agent/
-├── src/main/kotlin/dev/agent/        # Source code
+├── src/main/kotlin/dev/agent/        # Core logic
 │   ├── Main.kt                        # CLI entry point
 │   └── OpenCodeAdapter.kt             # LLM integration
+├── src/main/kotlin/dev/agent/plugin/  # Plugin code
 ├── src/test/kotlin/dev/agent/         # Tests
-│   └── PromptsTest.kt
 ├── build.gradle.kts                   # Gradle config
 ├── gradlew / gradlew.bat              # Gradle wrapper
 ├── gradle/wrapper/                    # Gradle wrapper files
@@ -263,10 +253,9 @@ tdd-agent/
 
 ### Next Steps
 
-1. Verify Java install: `java -version`
-2. Run build: `gradlew.bat build`
-3. Open in JetBrains IDE
-4. See TICKETS.md for milestone breakdown
+1. Run build: `gradlew.bat build`
+2. Open in JetBrains IDE
+3. See `tickets.md` for milestone breakdown
 
 ## License
 

@@ -161,6 +161,7 @@ class IdeCodeInserter(private val project: Project) : CodeInserter {
         val ktFile = classOrObject.containingFile as? KtFile ?: return null
         val document = PsiDocumentManager.getInstance(project).getDocument(ktFile) ?: return null
         val insertOffset = classOrObject.textRange.endOffset
+        val className = classOrObject.name
 
         ApplicationManager.getApplication().invokeAndWait {
             WriteCommandAction.writeCommandAction(project, ktFile).run<RuntimeException> {
@@ -169,7 +170,10 @@ class IdeCodeInserter(private val project: Project) : CodeInserter {
             }
         }
 
-        return classOrObject.body
+        // Force PSI reparse by finding the class again
+        val updatedClass = PsiTreeUtil.findChildrenOfType(ktFile, KtClassOrObject::class.java)
+            .find { it.name == className }
+        return updatedClass?.body
     }
 
     private fun insertAtAnchor(
