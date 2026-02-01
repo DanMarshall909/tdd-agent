@@ -5,6 +5,7 @@ import org.jetbrains.intellij.platform.gradle.models.ProductRelease.Channel.RELE
 plugins {
     kotlin("jvm") version "2.0.10"
     kotlin("plugin.serialization") version "2.0.10"
+    id("org.jetbrains.kotlinx.kover") version "0.9.5"
     id("org.jetbrains.intellij.platform") version "2.11.0"
     id("com.diffplug.spotless") version "6.25.0"
     `maven-publish`
@@ -23,6 +24,7 @@ repositories {
 dependencies {
     intellijPlatform {
         intellijIdea("2025.1.7")
+        bundledPlugin("org.jetbrains.kotlin")
     }
 
     // Kotlin
@@ -96,4 +98,14 @@ java {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("dev.agent.plugin.*")
+            }
+        }
+    }
 }
