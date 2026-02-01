@@ -30,6 +30,12 @@ class OpenCodeAdapter(
         val exitCode = process.exitValue()
         val output = process.inputStream.bufferedReader().readText()
 
+        if (output.isNotBlank()) {
+            println("📋 OpenCode Output:")
+            println(output)
+            println()
+        }
+
         if (exitCode != 0) {
             throw RuntimeException("OpenCode exited with code $exitCode: $output")
         }
