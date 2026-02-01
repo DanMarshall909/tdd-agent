@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<idea-plugin>
+    <id>dev.agent.tdd-agent</id>
+    <name>TDD Agent</name>
+    <vendor>dev.agent</vendor>
+    <description>IntelliJ plugin for enforcing strict TDD workflow with LLM-generated tests and implementations.</description>
+    <version>0.1.0</version>
+
+    <!-- Requires IntelliJ IDEA 2023.3+ -->
+    <idea-version since-build="233"/>
+
+    <!-- Plugin dependencies -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Tool window -->
+        <toolWindow
+                id="TDD Agent"
+                secondary="true"
+                icon="AllIcons.Toolwindows.ToolWindowBuild"
+                anchor="right"
+                factoryClass="dev.agent.plugin.TddToolWindowFactory"/>
+
+        <!-- Notification group -->
+        <notificationGroup
+                id="TDD Agent"
+                displayType="BALLOON"/>
+    </extensions>
+</idea-plugin>

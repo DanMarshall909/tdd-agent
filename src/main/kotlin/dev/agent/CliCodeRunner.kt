@@ -1,13 +1,10 @@
 package dev.agent
 
-import org.springframework.stereotype.Component
-
 /**
  * CLI implementation of CodeRunner.
  * For now, returns mock results for testing the flow.
  * Will be replaced with actual test execution via Gradle.
  */
-@Component
 class CliCodeRunner : CodeRunner {
     override suspend fun runTests(): CodeRunner.Result {
         // TODO: Implement actual test execution via Gradle

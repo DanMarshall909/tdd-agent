@@ -1,11 +1,14 @@
 package dev.agent
 
 import kotlinx.coroutines.runBlocking
-import org.springframework.boot.runApplication
+import java.time.Duration
 
 fun main(args: Array<String>) = runBlocking {
-    val context = runApplication<TddApplication>(*args)
-    val orchestrator = context.getBean(TddOrchestrator::class.java)
+    // Direct instantiation without Spring Boot
+    val llmAdapter: LlmAdapter = OpenCodeAdapter(model = null, timeout = Duration.ofMinutes(5))
+    val codeRunner: CodeRunner = CliCodeRunner()
+    val codeInserter: CodeInserter = CliCodeInserter()
+    val orchestrator = TddOrchestrator(llmAdapter, codeRunner, codeInserter)
 
     println("╔════════════════════════════════════════╗")
     println("║         TDD Agent CLI v0.1.0           ║")

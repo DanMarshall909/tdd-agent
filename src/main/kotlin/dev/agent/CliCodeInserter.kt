@@ -1,13 +1,10 @@
 package dev.agent
 
-import org.springframework.stereotype.Component
-
 /**
  * CLI implementation of CodeInserter.
  * For now, just prints the code and asks for confirmation.
  * Will be replaced with actual file insertion via IDE.
  */
-@Component
 class CliCodeInserter : CodeInserter {
     override suspend fun insertTest(testCode: String): Boolean {
         println("Generated test code:")

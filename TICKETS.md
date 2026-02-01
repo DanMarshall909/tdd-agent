@@ -19,7 +19,7 @@ run # TDD Agent - Project Tickets (Revised)
 
 ---
 
-## M1: CLI Walking Skeleton (3 days)
+## M1: CLI Walking Skeleton (3 days) ✅ COMPLETE
 
 Goal: Validate the TDD loop works before building plugin infrastructure.
 
@@ -28,9 +28,9 @@ Goal: Validate the TDD loop works before building plugin infrastructure.
 **Estimate:** 1 hour
 
 **Tasks:**
-- [ ] Create Gradle Kotlin project
-- [ ] Add dependencies: kotlinx-coroutines, kotlinx-serialization
-- [ ] Configure Kotlin 1.9+
+- [x] Create Gradle Kotlin project
+- [x] Add dependencies: kotlinx-coroutines, kotlinx-serialization
+- [x] Configure Kotlin 1.9+
 
 **Structure:**
 ```
@@ -50,10 +50,10 @@ tdd-agent/
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Subprocess wrapper for `opencode run`
-- [ ] Pass prompt, get response
-- [ ] Handle timeout (5 min default)
-- [ ] Parse output
+- [x] Subprocess wrapper for `opencode run`
+- [x] Pass prompt, get response
+- [x] Handle timeout (5 min default)
+- [x] Parse output
 
 ```kotlin
 class OpenCodeAdapter(
@@ -65,8 +65,8 @@ class OpenCodeAdapter(
 ```
 
 **Acceptance:**
-- [ ] Can send prompt, get response
-- [ ] Timeout works
+- [x] Can send prompt, get response
+- [x] Timeout works
 
 ---
 
@@ -75,18 +75,18 @@ class OpenCodeAdapter(
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Prompt template for Kotest BehaviorSpec
-- [ ] Accepts: BDD step, context (optional)
-- [ ] Returns: just the `given/when/then` block
+- [x] Prompt template for Kotest BehaviorSpec
+- [x] Accepts: BDD step, context (optional)
+- [x] Returns: just the `given/when/then` block
 
 ```kotlin
 fun buildTestPrompt(step: String, context: String? = null): String
 ```
 
 **Acceptance:**
-- [ ] Generates valid Kotest BehaviorSpec blocks
-- [ ] No imports, no class wrapper
-- [ ] Uses Kotest matchers
+- [x] Generates valid Kotest BehaviorSpec blocks
+- [x] No imports, no class wrapper
+- [x] Uses Kotest matchers
 
 ---
 
@@ -95,18 +95,18 @@ fun buildTestPrompt(step: String, context: String? = null): String
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Prompt template for minimal implementation
-- [ ] Accepts: failing test, error message
-- [ ] Returns: just the function/method body
+- [x] Prompt template for minimal implementation
+- [x] Accepts: failing test, error message
+- [x] Returns: just the function/method body
 
 ```kotlin
 fun buildImplPrompt(test: String, error: String? = null): String
 ```
 
 **Acceptance:**
-- [ ] Generates minimal Kotlin code
-- [ ] No over-engineering
-- [ ] Compiles
+- [x] Generates minimal Kotlin code
+- [x] No over-engineering
+- [x] Compiles
 
 ---
 
@@ -115,12 +115,12 @@ fun buildImplPrompt(test: String, error: String? = null): String
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Read BDD step from user
-- [ ] Generate test, display
-- [ ] Prompt: "Did test fail? (y/n)"
-- [ ] Generate implementation, display
-- [ ] Prompt: "Do tests pass? (y/n)"
-- [ ] Loop or exit
+- [x] Read BDD step from user
+- [x] Generate test, display
+- [x] Prompt: "Did test fail? (y/n)"
+- [x] Generate implementation, display
+- [x] Prompt: "Do tests pass? (y/n)"
+- [x] Loop or exit
 
 ```kotlin
 fun main() = runBlocking {
@@ -129,9 +129,9 @@ fun main() = runBlocking {
 ```
 
 **Acceptance:**
-- [ ] Complete TDD cycle works manually
-- [ ] Can do multiple steps in sequence
-- [ ] Clean exit with "done"
+- [x] Complete TDD cycle works manually
+- [x] Can do multiple steps in sequence
+- [x] Clean exit with "done"
 
 ---
 
