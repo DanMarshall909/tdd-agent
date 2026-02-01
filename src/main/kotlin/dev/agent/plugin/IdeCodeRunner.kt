@@ -42,6 +42,7 @@ class IdeCodeRunner(
             )
         }
 
+        // Gradle supports inner classes with $ separator (e.g., com.example.Outer$Inner)
         val gradleCmd = if (SystemInfo.isWindows) "gradlew.bat" else "./gradlew"
         val commandLine = GeneralCommandLine()
             .withWorkDirectory(projectPath)
