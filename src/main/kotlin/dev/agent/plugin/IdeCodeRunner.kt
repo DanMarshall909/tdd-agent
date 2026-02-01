@@ -9,13 +9,19 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.SystemInfo
 import dev.agent.CodeRunner
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import java.nio.charset.StandardCharsets
 import kotlin.coroutines.resume
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * IDE implementation of CodeRunner using Gradle test execution.
  */
-class IdeCodeRunner(private val project: Project) : CodeRunner {
+class IdeCodeRunner(
+    private val project: Project,
+    private val timeout: Duration = 60.seconds
+) : CodeRunner {
     override suspend fun runTests(): CodeRunner.Result {
         val runState = TddRunState.getInstance(project)
         val classFqn = runState.lastTestClassFqn
@@ -43,14 +49,22 @@ class IdeCodeRunner(private val project: Project) : CodeRunner {
             .withParameters("test", "--tests", classFqn)
             .withCharset(StandardCharsets.UTF_8)
 
-        return runCommand(commandLine)
+        val result = withTimeoutOrNull(timeout) {
+            runCommand(commandLine)
+        }
+        return result ?: CodeRunner.Result(
+            success = false,
+            output = "",
+            error = "Test execution timeout (${timeout.inWholeSeconds}s exceeded)",
+        )
     }
 
     private suspend fun runCommand(commandLine: GeneralCommandLine): CodeRunner.Result =
         suspendCancellableCoroutine { continuation ->
             val output = StringBuilder()
+            var handler: OSProcessHandler? = null
             try {
-                val handler = OSProcessHandler(commandLine)
+                handler = OSProcessHandler(commandLine)
                 handler.addProcessListener(object : ProcessAdapter() {
                     override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
                         output.append(event.text)
@@ -68,6 +82,9 @@ class IdeCodeRunner(private val project: Project) : CodeRunner {
                     }
                 })
                 handler.startNotify()
+                continuation.invokeOnCancellation {
+                    handler.destroyProcess()
+                }
             } catch (e: Exception) {
                 continuation.resume(
                     CodeRunner.Result(
