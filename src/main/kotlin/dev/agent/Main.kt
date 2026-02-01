@@ -1,31 +1,42 @@
 package dev.agent
 
 import kotlinx.coroutines.runBlocking
+import org.springframework.boot.runApplication
 
-fun main() = runBlocking {
-    val adapter = OpenCodeAdapter()
+fun main(args: Array<String>) = runBlocking {
+    val context = runApplication<TddApplication>(*args)
+    val orchestrator = context.getBean(TddOrchestrator::class.java)
 
     println("╔════════════════════════════════════════╗")
     println("║         TDD Agent CLI v0.1.0           ║")
     println("╚════════════════════════════════════════╝")
     println()
 
-    // Hardcoded test step for debugging
-    val step = "user can login with valid credentials"
+    while (true) {
+        println("Enter BDD step (or 'quit' to exit):")
+        print("> ")
+        val step = readLine()?.trim() ?: break
 
-    println("📝 Generating test...")
-    val prompt = buildTestPrompt(step, null)
-    println("Prompt: $prompt")
-    println()
+        if (step.lowercase() == "quit") {
+            println("Goodbye!")
+            break
+        }
+        if (step.isBlank()) continue
 
-    try {
-        val testCode = adapter.chat(prompt)
-        println("✓ Test generated:")
-        println("───────────────────────────────────────")
-        println(testCode)
-        println("───────────────────────────────────────")
-    } catch (e: Exception) {
-        println("❌ Error: ${e.message}")
-        e.printStackTrace()
+        println()
+        val result = orchestrator.executeStep(step)
+        println()
+
+        when {
+            result.success -> {
+                println("✅ Step complete!")
+                println("  Test: ${result.testCode?.take(50)}...")
+                println("  Impl: ${result.implCode?.take(50)}...")
+            }
+            result.error != null -> {
+                println("❌ Error: ${result.error}")
+            }
+        }
+        println()
     }
 }
