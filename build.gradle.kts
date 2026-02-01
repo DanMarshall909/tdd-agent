@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "1.9.24"
     kotlin("plugin.serialization") version "1.9.24"
+    id("com.diffplug.spotless") version "6.23.3"
 }
 
 group = "dev.agent"
@@ -8,6 +9,19 @@ version = "0.1.0"
 
 repositories {
     mavenCentral()
+}
+
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint("0.50.0")
+            .setEditorConfigPath(file(".editorconfig"))
+    }
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint("0.50.0")
+            .setEditorConfigPath(file(".editorconfig"))
+    }
 }
 
 dependencies {
