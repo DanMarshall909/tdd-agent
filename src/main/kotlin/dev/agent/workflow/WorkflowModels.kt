@@ -31,6 +31,7 @@ enum class WorkflowPhase {
 
 data class RequirementsData(
     val featureDescription: String,
+    val additionalRequirements: String?,
     val scenarios: List<Scenario>,
     val approved: Boolean
 )
@@ -63,6 +64,7 @@ data class WorkflowState(
             phase = WorkflowPhase.REQUIREMENTS,
             requirements = RequirementsData(
                 featureDescription = "",
+                additionalRequirements = null,
                 scenarios = emptyList(),
                 approved = false,
             ),

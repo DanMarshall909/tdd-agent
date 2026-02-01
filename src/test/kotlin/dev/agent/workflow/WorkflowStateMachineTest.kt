@@ -9,7 +9,7 @@ class WorkflowStateMachineTest : BehaviorSpec({
         val initial = WorkflowState.initial()
 
         `when`("submitting a feature description") {
-            val event = WorkflowEvent.FeatureSubmitted("Password reset by email")
+            val event = WorkflowEvent.FeatureSubmitted("Password reset by email", null)
             val result = WorkflowStateMachine.reduce(initial, event)
 
             then("it stays in requirements and stores the description") {
@@ -41,6 +41,7 @@ class WorkflowStateMachineTest : BehaviorSpec({
         val stateWithScenarios = WorkflowState.initial().copy(
             requirements = RequirementsData(
                 featureDescription = "Password reset",
+                additionalRequirements = null,
                 scenarios = listOf(scenario),
                 approved = false,
             ),
@@ -107,6 +108,19 @@ class WorkflowStateMachineTest : BehaviorSpec({
 
         `when`("approving a plan without one") {
             val result = WorkflowStateMachine.reduce(planningState, WorkflowEvent.PlanApproved)
+
+            then("it rejects the transition") {
+                result.shouldBeInstanceOf<TransitionResult.Rejected>()
+            }
+        }
+
+        `when`("approving a plan without scenarios") {
+            val withPlan = WorkflowStateMachine.reduce(
+                planningState,
+                WorkflowEvent.PlanProposed("Simple plan"),
+            ) as TransitionResult.Success
+
+            val result = WorkflowStateMachine.reduce(withPlan.state, WorkflowEvent.PlanApproved)
 
             then("it rejects the transition") {
                 result.shouldBeInstanceOf<TransitionResult.Rejected>()

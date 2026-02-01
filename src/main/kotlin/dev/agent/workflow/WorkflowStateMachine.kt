@@ -1,7 +1,7 @@
 package dev.agent.workflow
 
 sealed class WorkflowEvent {
-    data class FeatureSubmitted(val description: String) : WorkflowEvent()
+    data class FeatureSubmitted(val description: String, val additionalRequirements: String?) : WorkflowEvent()
     data class ScenariosGenerated(val scenarios: List<Scenario>) : WorkflowEvent()
     object ScenariosApproved : WorkflowEvent()
     data class ResearchCompleted(val summary: String) : WorkflowEvent()
@@ -36,7 +36,10 @@ object WorkflowStateMachine {
             return TransitionResult.Rejected("Requirements are locked")
         }
         val updated = state.copy(
-            requirements = state.requirements.copy(featureDescription = event.description.trim()),
+            requirements = state.requirements.copy(
+                featureDescription = event.description.trim(),
+                additionalRequirements = event.additionalRequirements?.trim().orEmpty().ifBlank { null },
+            ),
         )
         return TransitionResult.Success(updated)
     }
@@ -105,6 +108,9 @@ object WorkflowStateMachine {
         val plan = state.planning.plan?.trim().orEmpty()
         if (plan.isBlank()) {
             return TransitionResult.Rejected("Cannot approve an empty plan")
+        }
+        if (state.requirements.scenarios.isEmpty()) {
+            return TransitionResult.Rejected("Cannot start implementation without scenarios")
         }
         val steps = flattenSteps(state.requirements.scenarios)
         val updated = state.copy(

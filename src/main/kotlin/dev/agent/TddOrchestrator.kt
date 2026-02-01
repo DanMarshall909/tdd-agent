@@ -1,6 +1,8 @@
 package dev.agent
 
 import com.intellij.openapi.diagnostic.Logger
+import dev.agent.workflow.Scenario
+import dev.agent.workflow.ScenarioParser
 
 /**
  * Orchestrates the TDD workflow using abstracted components.
@@ -30,6 +32,12 @@ class TddOrchestrator(
     suspend fun generateImplementationCode(testCode: String): String {
         val prompt = buildImplPrompt(testCode, null)
         return llm.generate(prompt)
+    }
+
+    suspend fun generateScenarios(featureDescription: String, additionalRequirements: String?): List<Scenario> {
+        val prompt = buildScenarioPrompt(featureDescription, additionalRequirements)
+        val raw = llm.generate(prompt)
+        return ScenarioParser.parse(raw)
     }
 
     suspend fun executeStep(bddStep: String): StepResult {
