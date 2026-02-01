@@ -15,11 +15,22 @@ class OpenCodeAdapter(
     suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
         val cmd = buildCommand(prompt)
         println("🔍 OpenCode: ${cmd.joinToString(" ")}")
+
         val process = ProcessBuilder(cmd)
-            .redirectErrorStream(true)
             .redirectInput(ProcessBuilder.Redirect.PIPE)
             .start()
+
+        // Close stdin immediately
         process.outputStream.close()
+
+        // Read output in a background thread to prevent deadlock
+        val outputFuture = java.util.concurrent.CompletableFuture.supplyAsync {
+            process.inputStream.bufferedReader().readText()
+        }
+
+        val errorFuture = java.util.concurrent.CompletableFuture.supplyAsync {
+            process.errorStream.bufferedReader().readText()
+        }
 
         val completed = process.waitFor(timeout.seconds, TimeUnit.SECONDS)
         if (!completed) {
@@ -30,19 +41,29 @@ class OpenCodeAdapter(
         val exitCode = process.exitValue()
         println("⏹️  Process exited with code: $exitCode")
 
-        val output = process.inputStream.bufferedReader().readText()
+        val output = outputFuture.get()
+        val errors = errorFuture.get()
+
         println("📊 Output length: ${output.length} bytes")
+        println("📊 Error output length: ${errors.length} bytes")
 
         if (output.isNotBlank()) {
             println("📋 OpenCode Output:")
             println(output)
-            println()
-        } else {
-            println("⚠️  No output received from opencode")
         }
 
+        if (errors.isNotBlank()) {
+            println("📋 OpenCode Errors:")
+            println(errors)
+        }
+
+        if (output.isBlank() && errors.isBlank()) {
+            println("⚠️  No output received from opencode")
+        }
+        println()
+
         if (exitCode != 0) {
-            throw RuntimeException("OpenCode exited with code $exitCode: $output")
+            throw RuntimeException("OpenCode exited with code $exitCode")
         }
 
         parseResponse(output)
