@@ -78,6 +78,10 @@ intellijPlatform {
     sandboxContainer.set(layout.buildDirectory.dir("idea-sandbox"))
 }
 
+tasks.named<org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask>("runIde") {
+    jvmArguments.add("-Didea.kotlin.plugin.use.k2=false")
+}
+
 kotlin {
     jvmToolchain(21)
     compilerOptions {
