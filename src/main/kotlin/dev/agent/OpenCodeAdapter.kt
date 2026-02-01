@@ -11,7 +11,9 @@ import java.util.concurrent.TimeUnit
 class OpenCodeAdapter(
     private val model: String? = null,
     private val timeout: Duration = Duration.ofMinutes(5)
-) {
+) : LlmAdapter {
+    override suspend fun generate(prompt: String): String = chat(prompt)
+
     suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
         val cmd = buildCommand()
         println("🔍 OpenCode command: ${cmd.joinToString(" ")}")
