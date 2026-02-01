@@ -746,6 +746,34 @@ enum class CoverageClassification {
 
 ---
 
+### M6-008: IDE test runner integration
+
+**Estimate:** 3 hours
+
+**Tasks:**
+- [ ] Determine which IntelliJ platform edition/bundled plugins expose JUnit/Execution UI APIs
+- [ ] Decide whether to require Java/Gradle plugins (compatibility trade-offs)
+- [ ] Implement IDE-native run configuration execution (fallback to Gradle CLI if missing)
+
+**Acceptance:**
+- [ ] Tests run via IDE runner when available
+- [ ] Clear fallback path when runner APIs are unavailable
+
+---
+
+### M6-009: Document test runner compatibility
+
+**Estimate:** 1 hour
+
+**Tasks:**
+- [ ] Document which IDEs/editions support IDE test runner integration
+- [ ] Note fallback behavior and limitations
+
+**Acceptance:**
+- [ ] Users understand runner behavior and requirements
+
+---
+
 ## Deferred (Not in V1)
 
 | Feature | Why Deferred |
@@ -818,3 +846,31 @@ These become tickets when you feel the pain.
 - [ ] M1-M3 complete (minimum usable)
 - [ ] Works reliably on your projects
 - [ ] Someone else can install and use it
+
+
+### FX-001: IDE test runner integration
+
+**Estimate:** 3 hours
+
+**Tasks:**
+- [ ] Determine which IntelliJ platform edition/bundled plugins expose JUnit/Execution UI APIs
+- [ ] Decide whether to require Java/Gradle plugins (compatibility trade-offs)
+- [ ] Implement IDE-native run configuration execution (fallback to Gradle CLI if missing)
+
+**Acceptance:**
+- [ ] Tests run via IDE runner when available
+- [ ] Clear fallback path when runner APIs are unavailable
+
+---
+
+### FX-002: Document test runner compatibility
+
+**Estimate:** 1 hour
+
+**Tasks:**
+- [ ] Document which IDEs/editions support IDE test runner integration
+- [ ] Note fallback behavior and limitations
+
+**Acceptance:**
+- [ ] Users understand runner behavior and requirements
+

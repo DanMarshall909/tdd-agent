@@ -26,5 +26,6 @@
         <notificationGroup
                 id="TDD Agent"
                 displayType="BALLOON"/>
+
     </extensions>
 </idea-plugin>
