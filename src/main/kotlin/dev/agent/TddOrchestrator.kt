@@ -16,6 +16,16 @@ class TddOrchestrator(
         val error: String?
     )
 
+    suspend fun generateTestCode(bddStep: String): String {
+        val prompt = buildTestPrompt(bddStep, null)
+        return llm.generate(prompt)
+    }
+
+    suspend fun generateImplementationCode(testCode: String): String {
+        val prompt = buildImplPrompt(testCode, null)
+        return llm.generate(prompt)
+    }
+
     suspend fun executeStep(bddStep: String): StepResult {
         return try {
             // Generate test

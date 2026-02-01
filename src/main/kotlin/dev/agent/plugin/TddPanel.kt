@@ -103,14 +103,7 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
 
         scope.launch {
             try {
-                val prompt = dev.agent.buildTestPrompt(step, null)
-                val code = service.orchestrator.let { orchestrator ->
-                    // For M2, just generate test code without running full orchestration
-                    val llm = orchestrator::class.java
-                        .getDeclaredField("llm").apply { isAccessible = true }
-                        .get(orchestrator) as dev.agent.LlmAdapter
-                    llm.generate(prompt)
-                }
+                val code = service.orchestrator.generateTestCode(step)
 
                 ApplicationManager.getApplication().invokeLater {
                     outputEditor.document.setText(code)
@@ -141,14 +134,7 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
 
         scope.launch {
             try {
-                val prompt = dev.agent.buildImplPrompt(testCode, null)
-                val code = service.orchestrator.let { orchestrator ->
-                    // For M2, just generate impl code
-                    val llm = orchestrator::class.java
-                        .getDeclaredField("llm").apply { isAccessible = true }
-                        .get(orchestrator) as dev.agent.LlmAdapter
-                    llm.generate(prompt)
-                }
+                val code = service.orchestrator.generateImplementationCode(testCode)
 
                 ApplicationManager.getApplication().invokeLater {
                     outputEditor.document.setText(code)
