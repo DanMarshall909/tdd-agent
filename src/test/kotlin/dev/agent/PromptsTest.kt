@@ -2,7 +2,7 @@ package dev.agent
 
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldContain
+import io.kotest.matchers.string.shouldContain
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
