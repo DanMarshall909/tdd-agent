@@ -108,11 +108,25 @@ class OpenCodeAdapter(
 
     fun parseResponse(output: String): String {
         return try {
-            val json = Json.parseToJsonElement(output).jsonObject
-            json["code"]?.jsonPrimitive?.content
-                ?: json["text"]?.jsonPrimitive?.content
-                ?: json["result"]?.jsonPrimitive?.content
-                ?: throw RuntimeException("No code field in response")
+            // Parse streaming JSON events (one per line)
+            val lines = output.trim().split("\n")
+            var generatedCode: String? = null
+
+            for (line in lines) {
+                if (line.isBlank()) continue
+
+                val json = Json.parseToJsonElement(line).jsonObject
+                val type = json["type"]?.jsonPrimitive?.content
+
+                // Look for text event which contains the generated code
+                if (type == "text") {
+                    val part = json["part"]?.jsonObject
+                    generatedCode = part?.get("text")?.jsonPrimitive?.content
+                }
+            }
+
+            generatedCode
+                ?: throw RuntimeException("No text event found in opencode response")
         } catch (e: Exception) {
             throw RuntimeException("Failed to parse OpenCode response: ${e.message}", e)
         }

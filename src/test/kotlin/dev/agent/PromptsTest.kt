@@ -8,26 +8,42 @@ import kotlinx.serialization.json.put
 
 class OpenCodeAdapterTest : BehaviorSpec({
     given("an OpenCodeAdapter") {
-        `when`("parsing JSON response with 'code' field") {
-            then("it extracts the code") {
+        `when`("parsing streaming JSON response") {
+            then("it extracts text from text event") {
                 val adapter = OpenCodeAdapter()
-                val json = buildJsonObject {
-                    put("code", "fun hello() = println(\"world\")")
+                val event = buildJsonObject {
+                    put("type", "text")
+                    put(
+                        "part",
+                        buildJsonObject {
+                            put("text", "fun hello() = println(\"world\")")
+                        },
+                    )
                 }.toString()
 
-                val result = adapter.parseResponse(json)
+                val result = adapter.parseResponse(event)
                 result shouldContain "println"
             }
         }
 
-        `when`("parsing JSON response with 'text' field") {
-            then("it falls back to text field") {
+        `when`("parsing multiple JSON events") {
+            then("it extracts text from the text event") {
                 val adapter = OpenCodeAdapter()
-                val json = buildJsonObject {
-                    put("text", "fun greet() = \"hi\"")
+                val event1 = buildJsonObject {
+                    put("type", "step_start")
+                }.toString()
+                val event2 = buildJsonObject {
+                    put("type", "text")
+                    put(
+                        "part",
+                        buildJsonObject {
+                            put("text", "fun greet() = \"hi\"")
+                        },
+                    )
                 }.toString()
 
-                val result = adapter.parseResponse(json)
+                val output = "$event1\n$event2"
+                val result = adapter.parseResponse(output)
                 result shouldContain "greet"
             }
         }
