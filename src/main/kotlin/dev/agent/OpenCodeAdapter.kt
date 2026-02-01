@@ -1,5 +1,6 @@
 package dev.agent
 
+import com.intellij.openapi.diagnostic.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -12,12 +13,16 @@ class OpenCodeAdapter(
     private val model: String? = null,
     private val timeout: Duration = Duration.ofMinutes(5)
 ) : LlmAdapter {
+    companion object {
+        private val LOG = Logger.getInstance(OpenCodeAdapter::class.java)
+    }
+
     override suspend fun generate(prompt: String): String = chat(prompt)
 
     suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
         val cmd = buildCommand()
-        println("🔍 OpenCode command: ${cmd.joinToString(" ")}")
-        println("📄 Prompt: ${prompt.take(100)}...")
+        LOG.debug("Executing OpenCode command: ${cmd.joinToString(" ")}")
+        LOG.debug("Prompt (${prompt.length} chars): ${prompt.take(200)}...")
 
         val process = ProcessBuilder(cmd)
             .redirectInput(ProcessBuilder.Redirect.PIPE)
@@ -25,6 +30,7 @@ class OpenCodeAdapter(
 
         // Write prompt to stdin
         process.outputStream.bufferedWriter().use { writer ->
+            LOG.debug("Writing prompt to OpenCode stdin (${prompt.length} bytes)")
             writer.write(prompt)
         }
 
@@ -44,28 +50,25 @@ class OpenCodeAdapter(
         }
 
         val exitCode = process.exitValue()
-        println("⏹️  Process exited with code: $exitCode")
+        LOG.info("OpenCode process exited with code: $exitCode")
 
         val output = outputFuture.get()
         val errors = errorFuture.get()
 
-        println("📊 Output length: ${output.length} bytes")
-        println("📊 Error output length: ${errors.length} bytes")
+        LOG.debug("Output length: ${output.length} bytes")
+        LOG.debug("Error output length: ${errors.length} bytes")
 
         if (output.isNotBlank()) {
-            println("📋 OpenCode Output:")
-            println(output)
+            LOG.debug("OpenCode stdout:\n${output.take(500)}")
         }
 
         if (errors.isNotBlank()) {
-            println("📋 OpenCode Errors:")
-            println(errors)
+            LOG.debug("OpenCode stderr:\n${errors.take(500)}")
         }
 
         if (output.isBlank() && errors.isBlank()) {
-            println("⚠️  No output received from opencode")
+            LOG.warn("No output received from OpenCode")
         }
-        println()
 
         if (exitCode != 0) {
             throw RuntimeException("OpenCode exited with code $exitCode")
@@ -113,22 +116,35 @@ class OpenCodeAdapter(
             // Parse streaming JSON events (one per line)
             val lines = output.trim().split("\n")
             var generatedCode: String? = null
+            var eventCount = 0
+
+            LOG.debug("Parsing ${lines.size} lines from OpenCode output")
 
             for (line in lines) {
                 if (line.isBlank()) continue
 
                 val json = Json.parseToJsonElement(line).jsonObject
                 val type = json["type"]?.jsonPrimitive?.content
+                LOG.debug("Event $eventCount: type=$type")
 
                 // Look for text event which contains the generated code
                 if (type == "text") {
                     val part = json["part"]?.jsonObject
                     generatedCode = part?.get("text")?.jsonPrimitive?.content
+                    if (generatedCode != null) {
+                        LOG.debug("Found text event with ${generatedCode.length} chars")
+                    }
                 }
+                eventCount++
             }
 
-            generatedCode
-                ?: throw RuntimeException("No text event found in opencode response")
+            if (generatedCode != null) {
+                LOG.info("Successfully parsed OpenCode response: ${generatedCode.length} chars")
+                generatedCode
+            } else {
+                LOG.error("No text event found in OpenCode response")
+                throw RuntimeException("No text event found in opencode response")
+            }
         } catch (e: Exception) {
             throw RuntimeException("Failed to parse OpenCode response: ${e.message}", e)
         }

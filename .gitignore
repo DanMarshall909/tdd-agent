@@ -25,3 +25,4 @@ test-integration/.gradle/
 test-integration/build/
 test-integration/.idea/
 test-integration/*.iml
+*.hprof

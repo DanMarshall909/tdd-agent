@@ -1,6 +1,7 @@
 package dev.agent.plugin
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.ex.EditorEx
@@ -27,6 +28,10 @@ import javax.swing.JPanel
  * Handles test and implementation generation with syntax highlighting.
  */
 class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout()) {
+    companion object {
+        private val LOG = Logger.getInstance(TddPanel::class.java)
+    }
+
     private val service = TddService.getInstance(project)
     private val scope = CoroutineScope(Dispatchers.Default)
 
@@ -41,7 +46,10 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
 
     override fun removeNotify() {
         super.removeNotify()
-        EditorFactory.getInstance().releaseEditor(outputEditor)
+        // Guard against double release
+        if (!outputEditor.isDisposed) {
+            EditorFactory.getInstance().releaseEditor(outputEditor)
+        }
     }
 
     init {
@@ -102,15 +110,21 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
         inputField.toolTipText = "Enter a BDD step, e.g., 'User can login with valid credentials'"
     }
 
+    private fun updateStatus(message: String) {
+        statusLabel.text = message
+        LOG.info("Status: $message")
+    }
+
     private fun onGenerateTest() {
         val step = inputField.text.trim()
         if (step.isBlank()) {
-            statusLabel.text = "❌ Error: Enter a BDD step"
+            updateStatus("Error: Enter a BDD step")
             return
         }
 
+        LOG.info("User action: Generate Test - Step: '$step'")
         setButtonsEnabled(false)
-        statusLabel.text = "⏳ Generating test..."
+        updateStatus("Generating test...")
 
         scope.launch {
             try {
@@ -120,13 +134,14 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
                     ApplicationManager.getApplication().runWriteAction {
                         outputEditor.document.setText(code)
                     }
-                    statusLabel.text = "✅ Test generated"
+                    updateStatus("Test generated")
                     setButtonsEnabled(true)
                     copyButton.isEnabled = true
                 }
             } catch (e: Exception) {
                 ApplicationManager.getApplication().invokeLater {
-                    statusLabel.text = "❌ Error: ${e.message}"
+                    LOG.error("Error generating test", e)
+                    updateStatus("Error: ${e.message}")
                     setButtonsEnabled(true)
                 }
             }
@@ -136,12 +151,13 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
     private fun onGenerateImplementation() {
         val testCode = outputEditor.document.text
         if (testCode.isBlank()) {
-            statusLabel.text = "❌ Error: Generate a test first"
+            updateStatus("Error: Generate a test first")
             return
         }
 
+        LOG.info("User action: Generate Implementation")
         setButtonsEnabled(false)
-        statusLabel.text = "⏳ Generating implementation..."
+        updateStatus("Generating implementation...")
 
         scope.launch {
             try {
@@ -151,13 +167,14 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
                     ApplicationManager.getApplication().runWriteAction {
                         outputEditor.document.setText(code)
                     }
-                    statusLabel.text = "✅ Implementation generated"
+                    updateStatus("Implementation generated")
                     setButtonsEnabled(true)
                     copyButton.isEnabled = true
                 }
             } catch (e: Exception) {
                 ApplicationManager.getApplication().invokeLater {
-                    statusLabel.text = "❌ Error: ${e.message}"
+                    LOG.error("Error generating implementation", e)
+                    updateStatus("Error: ${e.message}")
                     setButtonsEnabled(true)
                 }
             }
@@ -167,19 +184,21 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
     private fun onInsertAndRun() {
         val step = inputField.text.trim()
         if (step.isBlank()) {
-            statusLabel.text = "❌ Error: Enter a BDD step"
+            updateStatus("Error: Enter a BDD step")
             return
         }
 
+        LOG.info("User action: Insert & Run - Step: '$step'")
         setButtonsEnabled(false)
-        statusLabel.text = "⏳ Running full TDD cycle..."
+        updateStatus("Running full TDD cycle...")
 
         scope.launch {
             try {
                 val orchestrator = service.orchestrator
                 if (orchestrator == null) {
                     ApplicationManager.getApplication().invokeLater {
-                        statusLabel.text = "❌ Error: Orchestrator not initialized"
+                        LOG.error("Orchestrator not initialized")
+                        updateStatus("Error: Orchestrator not initialized")
                         setButtonsEnabled(true)
                     }
                     return@launch
@@ -188,7 +207,8 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
                 val result = orchestrator.executeStep(step)
                 if (result == null) {
                     ApplicationManager.getApplication().invokeLater {
-                        statusLabel.text = "❌ Error: Execution returned null"
+                        LOG.error("Execution returned null")
+                        updateStatus("Error: Execution returned null")
                         setButtonsEnabled(true)
                     }
                     return@launch
@@ -205,15 +225,17 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
                     }
 
                     if (result.success) {
-                        statusLabel.text = "✅ TDD cycle complete"
+                        updateStatus("TDD cycle complete")
                     } else {
-                        statusLabel.text = "❌ ${result.error ?: "TDD cycle failed"}"
+                        LOG.warn("TDD cycle failed: ${result.error}")
+                        updateStatus("Error: ${result.error ?: "TDD cycle failed"}")
                     }
                     setButtonsEnabled(true)
                 }
             } catch (e: Exception) {
                 ApplicationManager.getApplication().invokeLater {
-                    statusLabel.text = "❌ Error: ${e.message ?: "Unknown error during TDD cycle"}"
+                    LOG.error("Error during TDD cycle", e)
+                    updateStatus("Error: ${e.message ?: "Unknown error during TDD cycle"}")
                     setButtonsEnabled(true)
                 }
             }
@@ -223,19 +245,21 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
     private fun onCopyToClipboard() {
         val text = outputEditor.document.text
         if (text.isBlank()) {
-            statusLabel.text = "❌ Error: Nothing to copy"
+            updateStatus("Error: Nothing to copy")
             return
         }
 
+        LOG.info("User action: Copy to Clipboard (${text.length} chars)")
         val clipboard = Toolkit.getDefaultToolkit().systemClipboard
         clipboard.setContents(StringSelection(text), null)
-        statusLabel.text = "✅ Copied to clipboard"
+        updateStatus("Copied to clipboard")
     }
 
     private fun setButtonsEnabled(enabled: Boolean) {
         generateTestButton.isEnabled = enabled
         generateImplButton.isEnabled = enabled
         insertRunButton.isEnabled = enabled
+        LOG.debug("Setting buttons enabled: $enabled")
     }
 
     private fun createKotlinEditor(): EditorEx {
@@ -260,11 +284,15 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
             .createEditorHighlighter(project, kotlinFileType)
         editor.highlighter = highlighter
 
-        // Set colors
+        // Set colors from global scheme
         val colorScheme = EditorColorsManager.getInstance().globalScheme
         editor.colorsScheme = colorScheme
 
         editor.isViewer = true
+
+        // Set background color for tool window context
+        editor.component.background = colorScheme.defaultBackground
+
         return editor
     }
 }
