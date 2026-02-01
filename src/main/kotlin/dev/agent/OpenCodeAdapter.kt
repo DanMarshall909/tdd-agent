@@ -13,15 +13,18 @@ class OpenCodeAdapter(
     private val timeout: Duration = Duration.ofMinutes(5)
 ) {
     suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
-        val cmd = buildCommand(prompt)
-        println("🔍 OpenCode: ${cmd.joinToString(" ")}")
+        val cmd = buildCommand()
+        println("🔍 OpenCode command: ${cmd.joinToString(" ")}")
+        println("📄 Prompt: ${prompt.take(100)}...")
 
         val process = ProcessBuilder(cmd)
             .redirectInput(ProcessBuilder.Redirect.PIPE)
             .start()
 
-        // Close stdin immediately
-        process.outputStream.close()
+        // Write prompt to stdin
+        process.outputStream.bufferedWriter().use { writer ->
+            writer.write(prompt)
+        }
 
         // Read output in a background thread to prevent deadlock
         val outputFuture = java.util.concurrent.CompletableFuture.supplyAsync {
@@ -69,7 +72,7 @@ class OpenCodeAdapter(
         parseResponse(output)
     }
 
-    private fun buildCommand(prompt: String): List<String> {
+    private fun buildCommand(): List<String> {
         val opencodePath = resolveOpencodePath()
         val cmd = mutableListOf(
             opencodePath,
@@ -79,7 +82,6 @@ class OpenCodeAdapter(
             "--print-logs",
             "--log-level",
             "DEBUG",
-            prompt,
         )
         if (model != null) {
             cmd.addAll(listOf("--model", model))
