@@ -11,7 +11,7 @@
 
     <!-- Plugin dependencies -->
     <depends>com.intellij.modules.platform</depends>
-    <depends>org.jetbrains.kotlin</depends>
+    <depends optional="true">org.jetbrains.kotlin</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Tool window -->

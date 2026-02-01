@@ -38,6 +38,11 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
     private val copyButton = JButton("Copy to Clipboard")
     private val statusLabel = JBLabel("Ready")
 
+    override fun removeNotify() {
+        super.removeNotify()
+        EditorFactory.getInstance().releaseEditor(outputEditor)
+    }
+
     init {
         // Set up input panel
         val inputPanel = JPanel(BorderLayout()).apply {
@@ -106,7 +111,9 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
                 val code = service.orchestrator.generateTestCode(step)
 
                 ApplicationManager.getApplication().invokeLater {
-                    outputEditor.document.setText(code)
+                    ApplicationManager.getApplication().runWriteAction {
+                        outputEditor.document.setText(code)
+                    }
                     statusLabel.text = "✅ Test generated"
                     generateTestButton.isEnabled = true
                     generateImplButton.isEnabled = true
@@ -137,7 +144,9 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
                 val code = service.orchestrator.generateImplementationCode(testCode)
 
                 ApplicationManager.getApplication().invokeLater {
-                    outputEditor.document.setText(code)
+                    ApplicationManager.getApplication().runWriteAction {
+                        outputEditor.document.setText(code)
+                    }
                     statusLabel.text = "✅ Implementation generated"
                     generateTestButton.isEnabled = true
                     generateImplButton.isEnabled = true
