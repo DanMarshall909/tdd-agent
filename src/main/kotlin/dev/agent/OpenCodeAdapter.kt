@@ -14,6 +14,7 @@ class OpenCodeAdapter(
 ) {
     suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
         val cmd = buildCommand(prompt)
+        println("🔍 OpenCode: ${cmd.joinToString(" ")}")
         val process = ProcessBuilder(cmd).redirectErrorStream(true).start()
 
         val completed = process.waitFor(timeout.seconds, TimeUnit.SECONDS)
@@ -34,7 +35,16 @@ class OpenCodeAdapter(
 
     private fun buildCommand(prompt: String): List<String> {
         val opencodePath = resolveOpencodePath()
-        val cmd = mutableListOf(opencodePath, "run", "--format", "json", prompt)
+        val cmd = mutableListOf(
+            opencodePath,
+            "run",
+            "--format",
+            "json",
+            "--print-logs",
+            "--log-level",
+            "DEBUG",
+            prompt,
+        )
         if (model != null) {
             cmd.addAll(listOf("--model", model))
         }
