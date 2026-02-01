@@ -82,6 +82,7 @@ intellijPlatform {
 
 tasks.named<org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask>("runIde") {
     jvmArguments.add("-Didea.kotlin.plugin.use.k2=false")
+    args("C:\\Users\\Dan\\IdeaProjects\\untitled2")
 }
 
 kotlin {
