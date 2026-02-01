@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "1.9.24"
     kotlin("plugin.serialization") version "1.9.24"
     id("com.diffplug.spotless") version "6.23.3"
+    application
 }
 
 group = "dev.agent"
@@ -38,6 +39,10 @@ dependencies {
 
 kotlin {
     jvmToolchain(21)
+}
+
+application {
+    mainClass = "dev.agent.MainKt"
 }
 
 tasks.withType<Test> {

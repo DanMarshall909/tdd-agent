@@ -33,11 +33,29 @@ class OpenCodeAdapter(
     }
 
     private fun buildCommand(prompt: String): List<String> {
-        val cmd = mutableListOf("opencode", "run", "--format", "json", prompt)
+        val opencodePath = resolveOpencodePath()
+        val cmd = mutableListOf(opencodePath, "run", "--format", "json", prompt)
         if (model != null) {
             cmd.addAll(listOf("--model", model))
         }
         return cmd
+    }
+
+    private fun resolveOpencodePath(): String {
+        val isWindows = System.getProperty("os.name").lowercase().contains("win")
+        val pathEnv = System.getenv("PATH") ?: ""
+        val pathDirs = pathEnv.split(System.getProperty("path.separator"))
+
+        val executableName = if (isWindows) "opencode.cmd" else "opencode"
+
+        for (dir in pathDirs) {
+            val candidate = java.io.File(dir, executableName)
+            if (candidate.exists() && candidate.isFile) {
+                return candidate.absolutePath
+            }
+        }
+
+        return "opencode"
     }
 
     fun parseResponse(output: String): String {
