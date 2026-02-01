@@ -35,13 +35,14 @@ class OpenCodeAdapterTest : BehaviorSpec({
         `when`("parsing invalid JSON") {
             then("it throws RuntimeException") {
                 val adapter = OpenCodeAdapter()
-                val exception = try {
+                var threwException = false
+                try {
                     adapter.parseResponse("not json")
-                    null
                 } catch (e: RuntimeException) {
-                    e
+                    threwException = true
+                    e.message shouldContain "Failed to parse"
                 }
-                exception shouldBe { it != null && it.message?.contains("Failed to parse") == true }
+                threwException shouldBe true
             }
         }
     }
