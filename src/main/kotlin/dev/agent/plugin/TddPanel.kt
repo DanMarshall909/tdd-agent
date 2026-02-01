@@ -35,6 +35,7 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
     private val outputEditor = createKotlinEditor()
     private val generateTestButton = JButton("Generate Test")
     private val generateImplButton = JButton("Generate Implementation")
+    private val insertRunButton = JButton("Insert & Run")
     private val copyButton = JButton("Copy to Clipboard")
     private val statusLabel = JBLabel("Ready")
 
@@ -56,6 +57,8 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
             add(generateTestButton)
             add(Box.createHorizontalStrut(8))
             add(generateImplButton)
+            add(Box.createHorizontalStrut(8))
+            add(insertRunButton)
             add(Box.createHorizontalStrut(8))
             add(copyButton)
             add(Box.createHorizontalGlue())
@@ -85,12 +88,16 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
         generateImplButton.addActionListener {
             onGenerateImplementation()
         }
+        insertRunButton.addActionListener {
+            onInsertAndRun()
+        }
         copyButton.addActionListener {
             onCopyToClipboard()
         }
 
         // Set initial state
         generateImplButton.isEnabled = false
+        insertRunButton.isEnabled = true
         copyButton.isEnabled = false
         inputField.toolTipText = "Enter a BDD step, e.g., 'User can login with valid credentials'"
     }
@@ -102,8 +109,7 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
             return
         }
 
-        generateTestButton.isEnabled = false
-        generateImplButton.isEnabled = false
+        setButtonsEnabled(false)
         statusLabel.text = "⏳ Generating test..."
 
         scope.launch {
@@ -115,14 +121,13 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
                         outputEditor.document.setText(code)
                     }
                     statusLabel.text = "✅ Test generated"
-                    generateTestButton.isEnabled = true
-                    generateImplButton.isEnabled = true
+                    setButtonsEnabled(true)
                     copyButton.isEnabled = true
                 }
             } catch (e: Exception) {
                 ApplicationManager.getApplication().invokeLater {
                     statusLabel.text = "❌ Error: ${e.message}"
-                    generateTestButton.isEnabled = true
+                    setButtonsEnabled(true)
                 }
             }
         }
@@ -135,8 +140,7 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
             return
         }
 
-        generateTestButton.isEnabled = false
-        generateImplButton.isEnabled = false
+        setButtonsEnabled(false)
         statusLabel.text = "⏳ Generating implementation..."
 
         scope.launch {
@@ -148,15 +152,45 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
                         outputEditor.document.setText(code)
                     }
                     statusLabel.text = "✅ Implementation generated"
-                    generateTestButton.isEnabled = true
-                    generateImplButton.isEnabled = true
+                    setButtonsEnabled(true)
                     copyButton.isEnabled = true
                 }
             } catch (e: Exception) {
                 ApplicationManager.getApplication().invokeLater {
                     statusLabel.text = "❌ Error: ${e.message}"
-                    generateImplButton.isEnabled = true
+                    setButtonsEnabled(true)
                 }
+            }
+        }
+    }
+
+    private fun onInsertAndRun() {
+        val step = inputField.text.trim()
+        if (step.isBlank()) {
+            statusLabel.text = "❌ Error: Enter a BDD step"
+            return
+        }
+
+        setButtonsEnabled(false)
+        statusLabel.text = "⏳ Running full TDD cycle..."
+
+        scope.launch {
+            val result = service.orchestrator.executeStep(step)
+            ApplicationManager.getApplication().invokeLater {
+                val code = result.implCode ?: result.testCode.orEmpty()
+                if (code.isNotBlank()) {
+                    ApplicationManager.getApplication().runWriteAction {
+                        outputEditor.document.setText(code)
+                    }
+                    copyButton.isEnabled = true
+                }
+
+                if (result.success) {
+                    statusLabel.text = "✅ TDD cycle complete"
+                } else {
+                    statusLabel.text = "❌ ${result.error ?: "TDD cycle failed"}"
+                }
+                setButtonsEnabled(true)
             }
         }
     }
@@ -171,6 +205,12 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
         val clipboard = Toolkit.getDefaultToolkit().systemClipboard
         clipboard.setContents(StringSelection(text), null)
         statusLabel.text = "✅ Copied to clipboard"
+    }
+
+    private fun setButtonsEnabled(enabled: Boolean) {
+        generateTestButton.isEnabled = enabled
+        generateImplButton.isEnabled = enabled
+        insertRunButton.isEnabled = enabled
     }
 
     private fun createKotlinEditor(): EditorEx {

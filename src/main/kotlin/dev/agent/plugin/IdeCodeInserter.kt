@@ -2,15 +2,24 @@ package dev.agent.plugin
 
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiElement
+import com.intellij.psi.codeStyle.CodeStyleManager
+import com.intellij.psi.util.PsiTreeUtil
 import dev.agent.CodeInserter
+import org.jetbrains.kotlin.psi.KtClassBody
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtFile
 
 /**
- * Stub implementation of CodeInserter for IDE integration.
- * M2: Shows notifications. Real implementation in M3.
+ * IDE implementation of CodeInserter for test and implementation insertion.
  */
 class IdeCodeInserter(private val project: Project) : CodeInserter {
     override suspend fun insertTest(testCode: String): Boolean {
@@ -48,20 +57,96 @@ class IdeCodeInserter(private val project: Project) : CodeInserter {
                 }
         }
 
+        val ktFile = testFile as? KtFile
+        if (ktFile == null) {
+            notify("Test file is not a Kotlin file.")
+            return false
+        }
+
+        val insertionPoint = TestInsertionLocator.findInsertionPoint(ktFile)
+        if (insertionPoint == null) {
+            notify("No BehaviorSpec found in the test file.")
+            return false
+        }
+
+        val behaviorClass = TestInsertionLocator.findBehaviorSpecClass(ktFile)
+        val testFqn = behaviorClass?.fqName?.asString()
+        if (testFqn == null) {
+            notify("Could not determine test class name.")
+            return false
+        }
+
+        val inserted = insertAtAnchor(ktFile, insertionPoint, testCode)
+        if (!inserted) {
+            notify("Failed to insert test code.")
+            return false
+        }
+
+        val virtualFile = testFile.virtualFile
+        if (virtualFile != null) {
+            FileEditorManager.getInstance(project).openFile(virtualFile, true)
+        }
+
+        val runState = TddRunState.getInstance(project)
+        runState.lastTestFile = virtualFile
+        runState.lastTestClassFqn = testFqn
+
         val path = testFile.virtualFile?.path ?: testFile.name
-        notify("Test file ready: $path. Insertion not implemented yet.")
+        notify("Inserted test into $path")
         return true
     }
 
     override suspend fun insertImplementation(implCode: String): Boolean {
-        NotificationGroupManager.getInstance()
-            .getNotificationGroup("TDD Agent")
-            .createNotification(
-                "Implementation insertion not yet implemented",
-                "Real PSI manipulation coming in M3",
-            )
-            .notify(project)
-        return true // Pretend success for M2
+        val runState = TddRunState.getInstance(project)
+        val testFile = runState.lastTestFile?.let { com.intellij.psi.PsiManager.getInstance(project).findFile(it) }
+            ?: run {
+                val editor = FileEditorManager.getInstance(project).selectedTextEditor
+                editor?.let { PsiDocumentManager.getInstance(project).getPsiFile(it.document) }
+            }
+            ?: run {
+                notify("No test file available to locate production code.")
+                return false
+            }
+
+        val production = ProductionFileLocator.findProductionFile(project, testFile)
+            ?: run {
+                notify("No production file found for the test.")
+                return false
+            }
+
+        val ktFile = production as? KtFile
+        if (ktFile == null) {
+            notify("Production file is not a Kotlin file.")
+            return false
+        }
+
+        val className = ktFile.virtualFile?.nameWithoutExtension
+        val classOrObject = findTargetClass(ktFile, className)
+        if (classOrObject == null) {
+            notify("No class or object found to insert implementation.")
+            return false
+        }
+
+        val body = ensureBody(classOrObject)
+        val anchor = body?.rBrace ?: run {
+            notify("No class body available for insertion.")
+            return false
+        }
+        val inserted = insertAtAnchor(ktFile, anchor, implCode, indentLevelDelta = 1)
+        if (!inserted) {
+            notify("Failed to insert implementation code.")
+            return false
+        }
+
+        val virtualFile = production.virtualFile
+        if (virtualFile != null) {
+            FileEditorManager.getInstance(project).openFile(virtualFile, true)
+        }
+
+        runState.lastProductionFile = virtualFile
+        val path = production.virtualFile?.path ?: production.name
+        notify("Inserted implementation into $path")
+        return true
     }
 
     private fun notify(message: String) {
@@ -69,5 +154,79 @@ class IdeCodeInserter(private val project: Project) : CodeInserter {
             .getNotificationGroup("TDD Agent")
             .createNotification(message, NotificationType.INFORMATION)
             .notify(project)
+    }
+
+    private fun ensureBody(classOrObject: KtClassOrObject): KtClassBody? {
+        classOrObject.body?.let { return it }
+        val ktFile = classOrObject.containingFile as? KtFile ?: return null
+        val document = PsiDocumentManager.getInstance(project).getDocument(ktFile) ?: return null
+        val insertOffset = classOrObject.textRange.endOffset
+
+        ApplicationManager.getApplication().invokeAndWait {
+            WriteCommandAction.writeCommandAction(project, ktFile).run<RuntimeException> {
+                document.insertString(insertOffset, " {\n}")
+                PsiDocumentManager.getInstance(project).commitDocument(document)
+            }
+        }
+
+        return classOrObject.body
+    }
+
+    private fun insertAtAnchor(
+        ktFile: KtFile,
+        anchor: PsiElement,
+        code: String,
+        indentLevelDelta: Int = 0
+    ): Boolean {
+        val document = PsiDocumentManager.getInstance(project).getDocument(ktFile) ?: return false
+        val anchorOffset = anchor.textRange.endOffset
+        val baseIndent = lineIndent(document, anchorOffset)
+        val indent = baseIndent + "    ".repeat(indentLevelDelta)
+        val formatted = indentCode(code, indent)
+        val insertText = "\n\n" + formatted + "\n"
+
+        ApplicationManager.getApplication().invokeAndWait {
+            WriteCommandAction.writeCommandAction(project, ktFile).run<RuntimeException> {
+                document.insertString(anchorOffset, insertText)
+                PsiDocumentManager.getInstance(project).commitDocument(document)
+                val range = TextRange(anchorOffset, anchorOffset + insertText.length)
+                CodeStyleManager.getInstance(project).reformatText(ktFile, range.startOffset, range.endOffset)
+            }
+        }
+
+        moveCaret(ktFile, anchorOffset + 1)
+        return true
+    }
+
+    private fun lineIndent(document: Document, offset: Int): String {
+        val line = document.getLineNumber(offset)
+        val start = document.getLineStartOffset(line)
+        val end = document.getLineEndOffset(line)
+        val text = document.charsSequence.subSequence(start, end)
+        val wsLength = text.indexOfFirst { it != ' ' && it != '\t' }.let { if (it == -1) text.length else it }
+        return text.subSequence(0, wsLength).toString()
+    }
+
+    private fun indentCode(code: String, indent: String): String {
+        return code.lines().joinToString("\n") { line ->
+            if (line.isBlank()) line else indent + line
+        }
+    }
+
+    private fun moveCaret(file: KtFile, offset: Int) {
+        val virtualFile = file.virtualFile ?: return
+        val editor = FileEditorManager.getInstance(project).openTextEditor(
+            com.intellij.openapi.fileEditor.OpenFileDescriptor(project, virtualFile, offset),
+            true,
+        )
+        editor?.caretModel?.moveToOffset(offset)
+    }
+
+    private fun findTargetClass(file: KtFile, className: String?): KtClassOrObject? {
+        val classes = PsiTreeUtil.findChildrenOfType(file, KtClassOrObject::class.java)
+        if (!className.isNullOrBlank()) {
+            classes.firstOrNull { it.name == className }?.let { return it }
+        }
+        return classes.firstOrNull()
     }
 }
