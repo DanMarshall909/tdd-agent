@@ -15,7 +15,11 @@ class OpenCodeAdapter(
     suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
         val cmd = buildCommand(prompt)
         println("🔍 OpenCode: ${cmd.joinToString(" ")}")
-        val process = ProcessBuilder(cmd).redirectErrorStream(true).start()
+        val process = ProcessBuilder(cmd)
+            .redirectErrorStream(true)
+            .redirectInput(ProcessBuilder.Redirect.PIPE)
+            .start()
+        process.outputStream.close()
 
         val completed = process.waitFor(timeout.seconds, TimeUnit.SECONDS)
         if (!completed) {
