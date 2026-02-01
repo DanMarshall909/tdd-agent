@@ -144,10 +144,10 @@ Goal: Basic plugin with tool window that does what CLI does.
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Create IntelliJ Platform Plugin project (Gradle)
-- [ ] Configure plugin.xml
-- [ ] Minimum IntelliJ version: 2023.3
-- [ ] Target: IntelliJ IDEA (works in Rider too)
+- [x] Create IntelliJ Platform Plugin project (Gradle)
+- [x] Configure plugin.xml
+- [x] Minimum IntelliJ version: 2023.3
+- [x] Target: IntelliJ IDEA (works in Rider too)
 
 **Structure:**
 ```
@@ -170,10 +170,10 @@ tdd-agent-plugin/
 **Estimate:** 1 hour
 
 **Tasks:**
-- [ ] Register tool window in plugin.xml
-- [ ] Factory creates panel
-- [ ] Icon for tool window
-- [ ] Anchor: right side
+- [x] Register tool window in plugin.xml
+- [x] Factory creates panel
+- [x] Icon for tool window
+- [x] Anchor: right side
 
 ```xml
 <toolWindow id="TDD Agent" 
@@ -182,8 +182,8 @@ tdd-agent-plugin/
 ```
 
 **Acceptance:**
-- [ ] Tool window appears in IDE
-- [ ] Opens/closes correctly
+- [x] Tool window appears in IDE
+- [x] Opens/closes correctly
 
 ---
 
@@ -192,11 +192,11 @@ tdd-agent-plugin/
 **Estimate:** 3 hours
 
 **Tasks:**
-- [ ] Input field for BDD step
-- [ ] Output area (scrollable) for generated code
-- [ ] "Generate Test" button
-- [ ] "Generate Implementation" button
-- [ ] Status label
+- [x] Input field for BDD step
+- [x] Output area (scrollable) for generated code
+- [x] "Generate Test" button
+- [x] "Generate Implementation" button
+- [x] Status label
 
 ```
 ┌─────────────────────────────────┐
@@ -218,9 +218,9 @@ tdd-agent-plugin/
 ```
 
 **Acceptance:**
-- [ ] Can enter text
-- [ ] Buttons trigger actions
-- [ ] Code displays with monospace font
+- [x] Can enter text
+- [x] Buttons trigger actions
+- [x] Code displays with monospace font
 
 ---
 
@@ -229,15 +229,15 @@ tdd-agent-plugin/
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Bundle OpenCodeAdapter in plugin
-- [ ] Call from button click (background thread)
-- [ ] Display result in output area
-- [ ] Handle errors gracefully
+- [x] Bundle OpenCodeAdapter in plugin
+- [x] Call from button click (background thread)
+- [x] Display result in output area
+- [x] Handle errors gracefully
 
 **Acceptance:**
-- [ ] Generate Test button calls LLM
-- [ ] Result appears in output area
-- [ ] UI doesn't freeze
+- [x] Generate Test button calls LLM
+- [x] Result appears in output area
+- [x] UI doesn't freeze
 
 ---
 
@@ -246,13 +246,13 @@ tdd-agent-plugin/
 **Estimate:** 2 hours
 
 **Tasks:**
-- [ ] Use EditorTextField instead of JTextArea
-- [ ] Configure for Kotlin syntax
-- [ ] Read-only mode
+- [x] Use EditorTextField instead of JTextArea
+- [x] Configure for Kotlin syntax
+- [x] Read-only mode
 
 **Acceptance:**
-- [ ] Generated code is syntax highlighted
-- [ ] Looks native to IDE
+- [x] Generated code is syntax highlighted
+- [x] Looks native to IDE
 
 ---
 
@@ -261,12 +261,12 @@ tdd-agent-plugin/
 **Estimate:** 30 min
 
 **Tasks:**
-- [ ] "Copy" button next to output
-- [ ] Copies generated code to clipboard
+- [x] "Copy" button next to output
+- [x] Copies generated code to clipboard
 
 **Acceptance:**
-- [ ] One click copy
-- [ ] Works on all platforms
+- [x] One click copy
+- [x] Works on all platforms
 
 ---
 
