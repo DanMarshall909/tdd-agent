@@ -175,22 +175,47 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
         statusLabel.text = "⏳ Running full TDD cycle..."
 
         scope.launch {
-            val result = service.orchestrator.executeStep(step)
-            ApplicationManager.getApplication().invokeLater {
-                val code = result.implCode ?: result.testCode.orEmpty()
-                if (code.isNotBlank()) {
-                    ApplicationManager.getApplication().runWriteAction {
-                        outputEditor.document.setText(code)
+            try {
+                val orchestrator = service.orchestrator
+                if (orchestrator == null) {
+                    ApplicationManager.getApplication().invokeLater {
+                        statusLabel.text = "❌ Error: Orchestrator not initialized"
+                        setButtonsEnabled(true)
                     }
-                    copyButton.isEnabled = true
+                    return@launch
                 }
 
-                if (result.success) {
-                    statusLabel.text = "✅ TDD cycle complete"
-                } else {
-                    statusLabel.text = "❌ ${result.error ?: "TDD cycle failed"}"
+                val result = orchestrator.executeStep(step)
+                if (result == null) {
+                    ApplicationManager.getApplication().invokeLater {
+                        statusLabel.text = "❌ Error: Execution returned null"
+                        setButtonsEnabled(true)
+                    }
+                    return@launch
                 }
-                setButtonsEnabled(true)
+
+                ApplicationManager.getApplication().invokeLater {
+                    // Prioritize impl code if present, fall back to test code
+                    val code = result.implCode?.takeIf { it.isNotBlank() } ?: result.testCode.orEmpty()
+                    if (code.isNotBlank()) {
+                        ApplicationManager.getApplication().runWriteAction {
+                            outputEditor.document.setText(code)
+                        }
+                        copyButton.isEnabled = true
+                    }
+
+                    if (result.success) {
+                        statusLabel.text = "✅ TDD cycle complete"
+                    } else {
+                        statusLabel.text = "❌ ${result.error ?: "TDD cycle failed"}"
+                    }
+                    setButtonsEnabled(true)
+                }
+            } catch (e: Exception) {
+                ApplicationManager.getApplication().invokeLater {
+                    statusLabel.text = "❌ Error: ${e.message ?: "Unknown error during TDD cycle"}"
+                    setButtonsEnabled(true)
+                }
             }
         }
     }
