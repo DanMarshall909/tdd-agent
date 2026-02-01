@@ -18,14 +18,31 @@ internal object ProductionFileLocator {
         }
 
         val packagePath = getPackagePath(testFile)
-        val baseName = getBaseName(virtualFile.nameWithoutExtension)
+        val testFileName = virtualFile.nameWithoutExtension
         val psiManager = PsiManager.getInstance(project)
         val sourceRoots = getSourceRoots(project, fileIndex)
 
+        // Try to find production file by progressively removing test suffixes
         for (root in sourceRoots) {
-            val file = findRelativeFile(root, packagePath, "$baseName.kt")
-            if (file != null) {
-                return psiManager.findFile(file)
+            // First try exact match (in case test and production have same name)
+            findRelativeFile(root, packagePath, "$testFileName.kt")?.let {
+                return psiManager.findFile(it)
+            }
+
+            // Then try removing Test suffix
+            if (testFileName.endsWith("Test")) {
+                val withoutTest = testFileName.removeSuffix("Test")
+                findRelativeFile(root, packagePath, "$withoutTest.kt")?.let {
+                    return psiManager.findFile(it)
+                }
+            }
+
+            // Then try removing Spec suffix
+            if (testFileName.endsWith("Spec")) {
+                val withoutSpec = testFileName.removeSuffix("Spec")
+                findRelativeFile(root, packagePath, "$withoutSpec.kt")?.let {
+                    return psiManager.findFile(it)
+                }
             }
         }
 
@@ -41,14 +58,6 @@ internal object ProductionFileLocator {
     private fun getPackagePath(file: PsiFile): String {
         val packageName = (file as? KtFile)?.packageFqName?.asString().orEmpty()
         return if (packageName.isBlank()) "" else packageName.replace('.', '/')
-    }
-
-    private fun getBaseName(nameWithoutExtension: String): String {
-        return when {
-            nameWithoutExtension.endsWith("Test") -> nameWithoutExtension.removeSuffix("Test")
-            nameWithoutExtension.endsWith("Spec") -> nameWithoutExtension.removeSuffix("Spec")
-            else -> nameWithoutExtension
-        }
     }
 
     private fun findRelativeFile(root: VirtualFile, packagePath: String, fileName: String): VirtualFile? {
