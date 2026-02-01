@@ -1,8 +1,12 @@
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdeaCommunity
+import org.jetbrains.intellij.platform.gradle.models.ProductRelease.Channel.RELEASE
+
 plugins {
-    kotlin("jvm") version "1.9.24"
-    kotlin("plugin.serialization") version "1.9.24"
-    id("org.jetbrains.intellij") version "1.16.1"
-    id("com.diffplug.spotless") version "6.23.3"
+    kotlin("jvm") version "2.0.10"
+    kotlin("plugin.serialization") version "2.0.10"
+    id("org.jetbrains.intellij.platform") version "2.11.0"
+    id("com.diffplug.spotless") version "6.25.0"
     `maven-publish`
 }
 
@@ -11,6 +15,23 @@ version = "0.1.0"
 
 repositories {
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
+}
+
+dependencies {
+    intellijPlatform {
+        intellijIdea("2025.1.7")
+    }
+
+    // Kotlin
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+
+    // Testing
+    testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
+    testImplementation("io.kotest:kotest-assertions-core:5.8.0")
+    testImplementation("io.mockk:mockk:1.13.9")
 }
 
 spotless {
@@ -26,27 +47,46 @@ spotless {
     }
 }
 
-dependencies {
-    // Kotlin
-    implementation(kotlin("stdlib"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+intellijPlatform {
+    buildSearchableOptions = false
 
-    // Testing
-    testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
-    testImplementation("io.kotest:kotest-assertions-core:5.8.0")
-    testImplementation("io.mockk:mockk:1.13.9")
-}
+    pluginConfiguration {
+        version = "0.1.0"
+        name = "TDD Agent"
+        description = "IntelliJ plugin for TDD workflow"
+        changeNotes = "Initial release"
 
-intellij {
-    version.set("2024.1")
+        ideaVersion {
+            sinceBuild = "251"
+        }
+    }
+
+    pluginVerification {
+        ides {
+            select {
+                types = listOf(IntellijIdeaCommunity)
+                untilBuild = "252.*"
+            }
+            select {
+                types = listOf(IntellijIdea)
+                sinceBuild = "253"
+                channels = listOf(RELEASE)
+            }
+        }
+    }
+
+    sandboxContainer.set(layout.buildDirectory.dir("idea-sandbox"))
 }
 
 kotlin {
     jvmToolchain(21)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
 }
 
 java {
+    sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
 
