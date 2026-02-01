@@ -24,7 +24,9 @@ fun buildTestPrompt(step: String, context: String? = null): String = """
 """.trimIndent()
 
 fun buildImplPrompt(test: String, error: String? = null): String = """
-    Make this test pass with MINIMAL code.
+    You are an AI coding agent. Make this test pass with the MINIMAL code change required.
+    You may reason through multiple steps, but only output the final code body.
+    Do not modify unrelated behavior or add extra features.
 
     Test:
     $test
@@ -36,4 +38,29 @@ fun buildImplPrompt(test: String, error: String? = null): String = """
     val user = userRepo.findByEmail(email)
     if (user?.passwordExpired == true) return PasswordExpired
     // ...
+""".trimIndent()
+
+fun buildScenarioPrompt(featureDescription: String, additionalRequirements: String? = null): String = """
+    You are an AI agent. Generate BDD scenarios (Gherkin style) from this feature description.
+    Focus on business requirements only, not internal implementation details.
+
+    Feature:
+    $featureDescription
+    ${additionalRequirements?.let { "\nAdditional Requirements:\n$it\n" } ?: ""}
+
+    Return ONLY valid JSON: an array of scenarios with name and steps.
+    Each step must include a type (GIVEN, WHEN, THEN, AND) and text.
+    No markdown, no commentary, no code fences.
+
+    Example JSON:
+    [
+      {
+        "name": "Password reset email",
+        "steps": [
+          { "type": "GIVEN", "text": "a registered user" },
+          { "type": "WHEN", "text": "they request a password reset" },
+          { "type": "THEN", "text": "they receive a reset email" }
+        ]
+      }
+    ]
 """.trimIndent()
