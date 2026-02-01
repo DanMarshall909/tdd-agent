@@ -19,4 +19,9 @@ Thumbs.db
 # Project
 *.class
 *.jar
-test-integration/
+
+# Test Integration (build artifacts only)
+test-integration/.gradle/
+test-integration/build/
+test-integration/.idea/
+test-integration/*.iml
