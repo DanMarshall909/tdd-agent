@@ -28,12 +28,17 @@ class OpenCodeAdapter(
         }
 
         val exitCode = process.exitValue()
+        println("⏹️  Process exited with code: $exitCode")
+
         val output = process.inputStream.bufferedReader().readText()
+        println("📊 Output length: ${output.length} bytes")
 
         if (output.isNotBlank()) {
             println("📋 OpenCode Output:")
             println(output)
             println()
+        } else {
+            println("⚠️  No output received from opencode")
         }
 
         if (exitCode != 0) {
