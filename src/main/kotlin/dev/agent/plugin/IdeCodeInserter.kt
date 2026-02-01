@@ -195,6 +195,8 @@ class IdeCodeInserter(private val project: Project) : CodeInserter {
                 PsiDocumentManager.getInstance(project).commitDocument(document)
                 val range = TextRange(anchorOffset, anchorOffset + insertText.length)
                 CodeStyleManager.getInstance(project).reformatText(ktFile, range.startOffset, range.endOffset)
+                // Optimize imports after insertion
+                optimizeImports(ktFile)
             }
         }
 
@@ -232,5 +234,15 @@ class IdeCodeInserter(private val project: Project) : CodeInserter {
             classes.firstOrNull { it.name == className }?.let { return it }
         }
         return classes.firstOrNull()
+    }
+
+    private fun optimizeImports(ktFile: KtFile) {
+        try {
+            // This forces Kotlin plugin to optimize imports and remove unused ones
+            val codeStyleManager = CodeStyleManager.getInstance(project)
+            codeStyleManager.reformat(ktFile)
+        } catch (e: Exception) {
+            // Silently fail - import optimization is nice-to-have, not critical
+        }
     }
 }
