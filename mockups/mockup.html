@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FLO Plugin Mockup</title>
+  <style>
+    :root {
+      --bg: #1f1f22;
+      --panel: #26262a;
+      --panel2: #2c2c31;
+      --border: #3a3a42;
+      --text: #e7e7ea;
+      --muted: #b3b3ba;
+      --accent: #5aa7ff;
+      --good: #49d17a;
+      --warn: #f6c744;
+      --bad:  #ff5a5f;
+      --chip: #34343a;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 10px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #19191c, #131316);
+      color: var(--text);
+      font-family: var(--sans);
+    }
+    .frame {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px;
+      gap: 10px;
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 220px;
+    }
+    .logo {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: radial-gradient(circle at 30% 30%, var(--accent), #3a65ff);
+      border: 1px solid rgba(255,255,255,.15);
+    }
+    .brand strong { letter-spacing: .4px; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      background: var(--chip);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--muted);
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+    .dot.good { background: var(--good); }
+    .dot.warn { background: var(--warn); }
+    .dot.bad { background: var(--bad); }
+    .spacer { flex: 1; }
+    .btn {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.1);
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn.primary {
+      border-color: rgba(90,167,255,.35);
+      background: rgba(90,167,255,.12);
+    }
+    .btn.danger {
+      border-color: rgba(255,90,95,.35);
+      background: rgba(255,90,95,.10);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 6px;
+      border-radius: 12px;
+      background: #1b1b1f;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .tab {
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      border-radius: 10px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      user-select: none;
+    }
+    .tab.active {
+      color: var(--text);
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.10);
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-header h3 {
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: .2px;
+    }
+    .card-header .sub {
+      color: var(--muted);
+      font-size: 12px;
+      margin-left: auto;
+    }
+    .card-body {
+      padding: 10px 12px;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    /* Left pane: Scenarios */
+    .search {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .search input {
+      width: 100%;
+      background: #1b1b1f;
+      border: 1px solid rgba(255,255,255,.10);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      outline: none;
+    }
+    .tree {
+      display: grid;
+      gap: 8px;
+    }
+    .node {
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 10px;
+      background: rgba(255,255,255,.03);
+      padding: 10px;
+    }
+    .node-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .badge {
+      font-size: 11px;
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+      padding: 2px 7px;
+      border-radius: 999px;
+      margin-left: auto;
+    }
+    .steps { margin: 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+    .steps li { margin: 4px 0; }
+    .step-active { color: var(--text); }
+    .step-done { color: rgba(73,209,122,.9); }
+
+    /* Right pane: Main */
+    .main-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .mode {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(90,167,255,.10);
+      border: 1px solid rgba(90,167,255,.25);
+      font-size: 12px;
+    }
+    .mode .dot { width: 10px; height: 10px; }
+    .main-top .subtle {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 0;
+    }
+
+    /* Setup stepper */
+    .stepper {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .step {
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(255,255,255,.03);
+    }
+    .step .kicker { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+    .step .title { font-size: 13px; margin: 0 0 8px 0; }
+    .step .mini { font-size: 12px; color: var(--muted); line-height: 1.35; }
+    .step .actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Output console */
+    .console {
+      background: #101013;
+      border-top: 1px solid rgba(255,255,255,.06);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: #d8d8dd;
+      overflow: auto;
+      min-height: 0;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+    .console .dim { color: rgba(216,216,221,.70); }
+    .console .ok { color: rgba(73,209,122,.95); }
+    .console .warn { color: rgba(246,199,68,.95); }
+    .console .bad { color: rgba(255,90,95,.95); }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+    }
+    .footer-actions input {
+      flex: 1;
+      background: #1b1b1f;
+      border: 1px solid rgba(255,255,255,.10);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .statusbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(38,38,42,.85);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .statusbar strong { color: var(--text); font-weight: 600; }
+    .statusbar .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+    @media (max-width: 980px) {
+      .content { grid-template-columns: 1fr; }
+      .brand { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <!-- Top toolbar -->
+    <div class="toolbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <strong>FLO</strong>
+          <div style="font-size:12px;color:var(--muted)">Orchestrated TDD + Replay</div>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="FLO views">
+        <div class="tab active" role="tab" aria-selected="true">Setup</div>
+        <div class="tab" role="tab" aria-selected="false">Run</div>
+        <div class="tab" role="tab" aria-selected="false">Replay</div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="chips" aria-label="run state">
+        <span class="chip"><span class="dot warn"></span> Awaiting approval</span>
+        <span class="chip">Policy: strict</span>
+        <span class="chip">Run: 2026-02-02_01</span>
+      </div>
+
+      <button class="btn">Open .flo/</button>
+      <button class="btn danger">Interrupt</button>
+    </div>
+
+    <!-- Main content -->
+    <div class="content">
+      <!-- Left: scenarios -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Scenarios</h3>
+          <div class="sub">features/*.feature</div>
+        </div>
+        <div class="card-body">
+          <div class="search">
+            <input type="text" placeholder="Filter scenarios or steps…" />
+            <button class="btn">Run</button>
+          </div>
+
+          <div class="tree">
+            <div class="node">
+              <div class="node-title">
+                <span class="dot good"></span>
+                <span>Scenario 1: valid renewal grants access</span>
+                <span class="badge">done</span>
+              </div>
+              <ol class="steps">
+                <li class="step-done">Given a user with an active subscription</li>
+                <li class="step-done">When the user requests premium content</li>
+                <li class="step-done">Then access is allowed</li>
+              </ol>
+            </div>
+
+            <div class="node">
+              <div class="node-title">
+                <span class="dot warn"></span>
+                <span>Scenario 2: expired subscription denies access</span>
+                <span class="badge">running</span>
+              </div>
+              <ol class="steps">
+                <li class="step-done">Given a user with an expired subscription</li>
+                <li class="step-active">When the user requests premium content</li>
+                <li>Then access is denied</li>
+              </ol>
+            </div>
+
+            <div class="node">
+              <div class="node-title">
+                <span class="dot"></span>
+                <span>Scenario 3: edge case queued for approval</span>
+                <span class="badge">pending</span>
+              </div>
+              <ol class="steps">
+                <li>Given a user with a cancelled subscription</li>
+                <li>When the user requests premium content</li>
+                <li>Then access is denied</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: main panel -->
+      <div class="card split">
+        <div class="main-top">
+          <span class="mode"><span class="dot warn"></span> Setup • Planning awaiting approval</span>
+          <span class="chip">Record: ON</span>
+          <span class="chip">Replay: OFF</span>
+          <div class="subtle">All inputs/outputs captured to .flo/runs/…</div>
+        </div>
+
+        <div class="card-body">
+          <!-- Setup view mock -->
+          <div class="stepper" aria-label="setup stepper">
+            <div class="step">
+              <div class="kicker">Step 1</div>
+              <p class="title">Requirements</p>
+              <div class="mini">
+                Capture intent, generate and refine BDD scenarios (.feature).
+              </div>
+              <div class="actions">
+                <button class="btn primary">Generate scenarios</button>
+                <button class="btn">Open feature file</button>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="kicker">Step 2</div>
+              <p class="title">Research</p>
+              <div class="mini">
+                Codebase search + prior art. Progress is event-driven and replayable.
+              </div>
+              <div class="actions">
+                <button class="btn">Run research</button>
+                <button class="btn">View findings</button>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="kicker">Step 3</div>
+              <p class="title">Planning</p>
+              <div class="mini">
+                Proposed approach + trade-offs. Approval locks plan into .flo/.
+              </div>
+              <div class="actions">
+                <button class="btn">Edit plan</button>
+                <button class="btn primary">Approve plan (locks)</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="card" style="border-radius:12px; border-color: rgba(255,255,255,.08);">
+            <div class="card-header">
+              <h3>Live Output</h3>
+              <div class="sub">streaming • hyperlinks • replay</div>
+            </div>
+            <div class="console" aria-label="console output">
+<span class="dim">&gt; plan.md updated</span>
+<span class="dim">&gt; awaiting user approval: plan_lock</span>
+
+<span class="warn">[gate]</span> Plan must be approved before execution begins.
+<span class="dim">policy: mutationScore.min=85; coverage.min=90</span>
+
+<span class="dim">---</span>
+<span class="dim">Preview:</span>
+<span class="dim">- Approach: add SubscriptionPolicy guard, update access service</span>
+<span class="dim">- Tests: add scenario-driven tests, then mutation hardening</span>
+<span class="dim">- Risks: time-dependent logic; recommend clock abstraction</span>
+            </div>
+            <div class="footer-actions">
+              <button class="btn danger">Interrupt</button>
+              <input type="text" placeholder="Feedback to agent (recorded in event stream)..." />
+              <button class="btn primary">Send</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="statusbar">
+          <span class="chip"><span class="dot warn"></span> Gate</span>
+          <span>Awaiting approval: <strong>plan_lock</strong></span>
+          <span class="right">
+            <span class="chip">Coverage: —</span>
+            <span class="chip">Mutation: —</span>
+            <button class="btn">Open timeline</button>
+            <button class="btn">Replay last</button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom status -->
+    <div class="statusbar">
+      <span>IDE: <strong>:contentReference[oaicite:0]{index=0}</strong></span>
+      <span>Workspace: <strong>subscription-service</strong></span>
+      <span class="right">
+        <span class="chip">Events: JSONL</span>
+        <span class="chip">Snapshots: TAR</span>
+        <span class="chip">Schema: enforced</span>
+      </span>
+    </div>
+  </div>
+</body>
+</html>
