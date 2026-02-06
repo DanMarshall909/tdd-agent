@@ -221,6 +221,7 @@ bd dep add <new-id> <current-id> --type discovered-from
 - **Never create markdown files for task tracking.** Use beads for all new work.
 - Always commit `.beads/issues.jsonl` alongside code changes.
 - The `.beads/*.db` files are gitignored (local SQLite cache only).
+- Use the `board-manager` skill as the default playbook for board operations.
 
 ## Commit & PR Guidelines
 
