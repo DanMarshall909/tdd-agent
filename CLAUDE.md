@@ -2,6 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Task Tracking with Beads
+
+We track all work in **Beads** (`bd`) instead of markdown files. Run `bd quickstart` to
+learn the workflow.
+
+### Starting a session
+
+1. Run `bd ready` to find unblocked work.
+2. Pick a task and run `bd update <id> --status in_progress`.
+3. Do the work, run tests, commit.
+4. Run `bd close <id> --reason "summary of what was done"`.
+5. If you discover new work while coding, file it immediately:
+   `bd create "title" -t bug|task|feature -p 0-4`
+   and link it: `bd dep add <new-id> <current-id> --type discovered-from`.
+6. After closing, run `bd ready` again and suggest the next task to the user.
+
+### Rules
+
+- **Never use TICKETS.md for new work.** All new issues go into beads.
+- Always check `bd ready` at the start of a session before doing anything.
+- File issues for problems you notice — do not silently skip them.
+- Commit `.beads/issues.jsonl` with your other changes so state is shared via git.
+
 ## Project Overview
 
 **TDD Agent** is an IntelliJ plugin that enforces strict TDD workflow:
