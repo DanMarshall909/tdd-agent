@@ -127,4 +127,115 @@ class WorkflowStateMachineTest : BehaviorSpec({
             }
         }
     }
+
+    given("an implementation phase state with queued steps") {
+        val steps = listOf(
+            Step(StepType.GIVEN, "a context is prepared"),
+            Step(StepType.THEN, "the outcome is verified"),
+        )
+        val implementationState = WorkflowState.initial().copy(
+            phase = WorkflowPhase.IMPLEMENTATION,
+            implementation = ImplementationData(steps, currentStepIndex = 0),
+        )
+
+        `when`("completing the current step before generating code") {
+            val result = WorkflowStateMachine.reduce(implementationState, WorkflowEvent.StepCompleted)
+
+            then("it rejects because sequence rules are enforced") {
+                result.shouldBeInstanceOf<TransitionResult.Rejected>()
+            }
+        }
+
+        `when`("generating implementation before a test") {
+            val result = WorkflowStateMachine.reduce(
+                implementationState,
+                WorkflowEvent.ImplementationGenerated("class Impl"),
+            )
+
+            then("it rejects the transition") {
+                result.shouldBeInstanceOf<TransitionResult.Rejected>()
+            }
+        }
+
+        `when`("generating test then implementation and completing the step") {
+            val testGenerated = WorkflowStateMachine.reduce(
+                implementationState,
+                WorkflowEvent.TestGenerated("class ExampleTest"),
+            )
+            testGenerated.shouldBeInstanceOf<TransitionResult.Success>()
+            val withTest = (testGenerated as TransitionResult.Success).state
+            withTest.implementation.stepStatus shouldBe ImplementationStepStatus.TEST_GENERATED
+            withTest.implementation.generatedTestCode shouldBe "class ExampleTest"
+
+            val implementationGenerated = WorkflowStateMachine.reduce(
+                withTest,
+                WorkflowEvent.ImplementationGenerated("class ExampleImpl"),
+            )
+            implementationGenerated.shouldBeInstanceOf<TransitionResult.Success>()
+            val withImplementation = (implementationGenerated as TransitionResult.Success).state
+            withImplementation.implementation.stepStatus shouldBe ImplementationStepStatus.IMPLEMENTATION_GENERATED
+            withImplementation.implementation.generatedImplementationCode shouldBe "class ExampleImpl"
+
+            val result = WorkflowStateMachine.reduce(withImplementation, WorkflowEvent.StepCompleted)
+
+            then("it advances and resets per-step status") {
+                result.shouldBeInstanceOf<TransitionResult.Success>()
+                val state = (result as TransitionResult.Success).state
+                state.phase shouldBe WorkflowPhase.IMPLEMENTATION
+                state.implementation.currentStepIndex shouldBe 1
+                state.implementation.stepStatus shouldBe ImplementationStepStatus.READY_FOR_TEST
+                state.implementation.generatedTestCode shouldBe null
+                state.implementation.generatedImplementationCode shouldBe null
+            }
+        }
+
+        `when`("completing steps beyond the queue") {
+            val firstWithTest = WorkflowStateMachine.reduce(
+                implementationState,
+                WorkflowEvent.TestGenerated("class ExampleTest"),
+            ) as TransitionResult.Success
+            val firstWithImpl = WorkflowStateMachine.reduce(
+                firstWithTest.state,
+                WorkflowEvent.ImplementationGenerated("class ExampleImpl"),
+            ) as TransitionResult.Success
+            val firstDone = WorkflowStateMachine.reduce(
+                firstWithImpl.state,
+                WorkflowEvent.StepCompleted,
+            ) as TransitionResult.Success
+
+            val secondWithTest = WorkflowStateMachine.reduce(
+                firstDone.state,
+                WorkflowEvent.TestGenerated("class ExampleTest2"),
+            ) as TransitionResult.Success
+            val secondWithImpl = WorkflowStateMachine.reduce(
+                secondWithTest.state,
+                WorkflowEvent.ImplementationGenerated("class ExampleImpl2"),
+            ) as TransitionResult.Success
+            val secondDone = WorkflowStateMachine.reduce(
+                secondWithImpl.state,
+                WorkflowEvent.StepCompleted,
+            ) as TransitionResult.Success
+
+            val result = WorkflowStateMachine.reduce(secondDone.state, WorkflowEvent.StepCompleted)
+
+            then("it rejects because no current step exists") {
+                result.shouldBeInstanceOf<TransitionResult.Rejected>()
+            }
+        }
+    }
+
+    given("an implementation phase state without queued steps") {
+        val emptyImplementationState = WorkflowState.initial().copy(
+            phase = WorkflowPhase.IMPLEMENTATION,
+            implementation = ImplementationData(emptyList(), currentStepIndex = 0),
+        )
+
+        `when`("finishing a step when none exist") {
+            val result = WorkflowStateMachine.reduce(emptyImplementationState, WorkflowEvent.StepCompleted)
+
+            then("it rejects the transition") {
+                result.shouldBeInstanceOf<TransitionResult.Rejected>()
+            }
+        }
+    }
 })

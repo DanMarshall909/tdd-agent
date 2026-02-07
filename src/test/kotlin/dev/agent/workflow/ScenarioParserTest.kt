@@ -4,6 +4,10 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 
 class ScenarioParserTest : BehaviorSpec({
+    val expectedFirstScenarioCount = 1
+    val expectedStepCount = 3
+    val resetScenarioName = "Reset"
+
     given("a scenario parser") {
         `when`("parsing a clean JSON array") {
             then("it returns scenarios") {
@@ -21,8 +25,8 @@ class ScenarioParserTest : BehaviorSpec({
                 """.trimIndent()
 
                 val scenarios = ScenarioParser.parse(json)
-                scenarios.size shouldBe 1
-                scenarios.first().steps.size shouldBe 3
+                scenarios.size shouldBe expectedFirstScenarioCount
+                scenarios.first().steps.size shouldBe expectedStepCount
             }
         }
 
@@ -44,7 +48,7 @@ class ScenarioParserTest : BehaviorSpec({
                 """.trimIndent()
 
                 val scenarios = ScenarioParser.parse(raw)
-                scenarios.first().name shouldBe "Reset"
+                scenarios.first().name shouldBe resetScenarioName
             }
         }
     }

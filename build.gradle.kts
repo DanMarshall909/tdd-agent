@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.JavaExec
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdeaCommunity
 import org.jetbrains.intellij.platform.gradle.models.ProductRelease.Channel.RELEASE
@@ -83,6 +84,13 @@ intellijPlatform {
 tasks.named<org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask>("runIde") {
     jvmArguments.add("-Didea.kotlin.plugin.use.k2=false")
     args("C:\\Users\\Dan\\IdeaProjects\\untitled2")
+}
+
+tasks.register<JavaExec>("workflowCli") {
+    group = "verification"
+    description = "Run the workflow state machine CLI for manual exploration"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("dev.agent.workflow.WorkflowCliKt")
 }
 
 kotlin {

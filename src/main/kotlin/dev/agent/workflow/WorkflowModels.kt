@@ -47,9 +47,18 @@ data class PlanningData(
 
 data class ImplementationData(
     val steps: List<Step>,
-    val currentStepIndex: Int
+    val currentStepIndex: Int,
+    val stepStatus: ImplementationStepStatus = ImplementationStepStatus.READY_FOR_TEST,
+    val generatedTestCode: String? = null,
+    val generatedImplementationCode: String? = null
 ) {
     fun currentStepOrNull(): Step? = steps.getOrNull(currentStepIndex)
+}
+
+enum class ImplementationStepStatus {
+    READY_FOR_TEST,
+    TEST_GENERATED,
+    IMPLEMENTATION_GENERATED
 }
 
 data class WorkflowState(

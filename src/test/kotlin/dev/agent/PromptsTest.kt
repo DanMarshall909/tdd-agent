@@ -1,22 +1,30 @@
 package dev.agent
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 class OpenCodeAdapterTest : BehaviorSpec({
+    val typeKey = "type"
+    val partKey = "part"
+    val textKey = "text"
+    val textType = "text"
+    val stepStartType = "step_start"
+    val invalidJson = "not json"
+    val parseFailurePrefix = "Failed to parse"
+
     given("an OpenCodeAdapter") {
         `when`("parsing streaming JSON response") {
             then("it extracts text from text event") {
                 val adapter = OpenCodeAdapter()
                 val event = buildJsonObject {
-                    put("type", "text")
+                    put(typeKey, textType)
                     put(
-                        "part",
+                        partKey,
                         buildJsonObject {
-                            put("text", "fun hello() = println(\"world\")")
+                            put(textKey, "fun hello() = println(\"world\")")
                         },
                     )
                 }.toString()
@@ -30,14 +38,14 @@ class OpenCodeAdapterTest : BehaviorSpec({
             then("it extracts text from the text event") {
                 val adapter = OpenCodeAdapter()
                 val event1 = buildJsonObject {
-                    put("type", "step_start")
+                    put(typeKey, stepStartType)
                 }.toString()
                 val event2 = buildJsonObject {
-                    put("type", "text")
+                    put(typeKey, textType)
                     put(
-                        "part",
+                        partKey,
                         buildJsonObject {
-                            put("text", "fun greet() = \"hi\"")
+                            put(textKey, "fun greet() = \"hi\"")
                         },
                     )
                 }.toString()
@@ -51,14 +59,10 @@ class OpenCodeAdapterTest : BehaviorSpec({
         `when`("parsing invalid JSON") {
             then("it throws RuntimeException") {
                 val adapter = OpenCodeAdapter()
-                var threwException = false
-                try {
-                    adapter.parseResponse("not json")
-                } catch (e: RuntimeException) {
-                    threwException = true
-                    e.message shouldContain "Failed to parse"
+                val error = shouldThrow<RuntimeException> {
+                    adapter.parseResponse(invalidJson)
                 }
-                threwException shouldBe true
+                error.message shouldContain parseFailurePrefix
             }
         }
     }

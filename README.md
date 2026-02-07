@@ -78,6 +78,8 @@ Settings → Plugins → ⚙️ → Install Plugin from Disk → tdd-agent.zip
 10. Verify all tests pass (green)
 11. Next step
 
+Every UI action above is mirrored in the `workflowCli` task (run via `./gradlew workflowCli`). Decisions such as submitting requirements, approving scenarios, completing research, proposing/approving plans, and finishing implementation steps can be driven from the CLI so automation, scripting, or non-IDE environments stay in sync with the plugin experience.
+
 ## Test Framework
 
 Generates [Kotest](https://kotest.io/) BehaviorSpec tests:

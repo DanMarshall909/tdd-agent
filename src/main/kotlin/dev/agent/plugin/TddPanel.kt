@@ -13,6 +13,8 @@ import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
+import dev.agent.TddOrchestrator
+import dev.agent.workflow.ImplementationStepStatus
 import dev.agent.workflow.Step
 import dev.agent.workflow.TransitionResult
 import dev.agent.workflow.WorkflowEvent
@@ -77,7 +79,6 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
 
     private val statusLabel = JBLabel("Ready")
 
-    private var lastTestCode: String? = null
     private var lastStepKey: String? = null
 
     override fun removeNotify() {
@@ -207,13 +208,16 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
             try {
                 val code = tddService.orchestrator.generateTestCode(stepText)
                 ApplicationManager.getApplication().invokeLater {
-                    ApplicationManager.getApplication().runWriteAction {
-                        outputEditor.document.setText(code)
+                    val transition = dispatch(WorkflowEvent.TestGenerated(code))
+                    if (transition is TransitionResult.Success) {
+                        ApplicationManager.getApplication().runWriteAction {
+                            outputEditor.document.setText(code)
+                        }
+                        copyButton.isEnabled = true
+                        updateStatus("Test generated")
+                    } else {
+                        handleTransitionResult(transition)
                     }
-                    lastTestCode = code
-                    generateImplButton.isEnabled = true
-                    copyButton.isEnabled = true
-                    updateStatus("Test generated")
                     setImplementationButtonsEnabled(true, preserveImplState = true)
                 }
             } catch (e: Exception) {
@@ -227,7 +231,7 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
     }
 
     private fun onGenerateImplementation() {
-        val testCode = lastTestCode ?: outputEditor.document.text
+        val testCode = workflowService.getState().implementation.generatedTestCode.orEmpty()
         if (testCode.isBlank()) {
             updateStatus("Error: Generate a test first")
             return
@@ -241,11 +245,16 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
             try {
                 val code = tddService.orchestrator.generateImplementationCode(testCode)
                 ApplicationManager.getApplication().invokeLater {
-                    ApplicationManager.getApplication().runWriteAction {
-                        outputEditor.document.setText(code)
+                    val transition = dispatch(WorkflowEvent.ImplementationGenerated(code))
+                    if (transition is TransitionResult.Success) {
+                        ApplicationManager.getApplication().runWriteAction {
+                            outputEditor.document.setText(code)
+                        }
+                        copyButton.isEnabled = true
+                        updateStatus("Implementation generated")
+                    } else {
+                        handleTransitionResult(transition)
                     }
-                    copyButton.isEnabled = true
-                    updateStatus("Implementation generated")
                     setImplementationButtonsEnabled(true, preserveImplState = true)
                 }
             } catch (e: Exception) {
@@ -283,8 +292,13 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
                     }
 
                     if (result.success) {
-                        dispatch(WorkflowEvent.StepCompleted)
-                        updateStatus("TDD cycle complete")
+                        val completedTransition = applySuccessfulExecutionToWorkflow(result)
+
+                        if (completedTransition is TransitionResult.Success) {
+                            updateStatus("TDD cycle complete")
+                        } else {
+                            handleTransitionResult(completedTransition)
+                        }
                     } else {
                         LOG.warn("TDD cycle failed: ${result.error}")
                         updateStatus("Error: ${result.error ?: "TDD cycle failed"}")
@@ -299,6 +313,34 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
                 }
             }
         }
+    }
+
+    private fun applySuccessfulExecutionToWorkflow(result: TddOrchestrator.StepResult): TransitionResult {
+        val currentStatus = workflowService.getState().implementation.stepStatus
+        val afterTest = when (currentStatus) {
+            ImplementationStepStatus.READY_FOR_TEST -> dispatch(WorkflowEvent.TestGenerated(result.testCode.orEmpty()))
+            ImplementationStepStatus.TEST_GENERATED,
+            ImplementationStepStatus.IMPLEMENTATION_GENERATED -> TransitionResult.Success(workflowService.getState())
+        }
+        if (afterTest is TransitionResult.Rejected) {
+            return afterTest
+        }
+
+        val statusAfterTest = workflowService.getState().implementation.stepStatus
+        val afterImplementation = when (statusAfterTest) {
+            ImplementationStepStatus.READY_FOR_TEST -> {
+                TransitionResult.Rejected("Cannot complete step without generating test")
+            }
+            ImplementationStepStatus.TEST_GENERATED -> {
+                dispatch(WorkflowEvent.ImplementationGenerated(result.implCode.orEmpty()))
+            }
+            ImplementationStepStatus.IMPLEMENTATION_GENERATED -> TransitionResult.Success(workflowService.getState())
+        }
+        if (afterImplementation is TransitionResult.Rejected) {
+            return afterImplementation
+        }
+
+        return dispatch(WorkflowEvent.StepCompleted)
     }
 
     private fun onCopyToClipboard() {
@@ -378,8 +420,6 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
         val currentKey = currentStep?.let { "${state.implementation.currentStepIndex}:${it.type}:${it.text}" }
         if (currentKey != lastStepKey) {
             lastStepKey = currentKey
-            lastTestCode = null
-            generateImplButton.isEnabled = false
         }
 
         phaseTabs.selectedIndex = when (state.phase) {
@@ -413,10 +453,13 @@ class TddPanel(private val project: Project) : JBPanel<TddPanel>(BorderLayout())
     }
 
     private fun setImplementationButtonsEnabled(enabled: Boolean, preserveImplState: Boolean = false) {
+        val state = workflowService.getState()
+        val stepStatus = state.implementation.stepStatus
+        val hasCurrentStep = state.implementation.currentStepOrNull() != null
         generateTestButton.isEnabled = enabled
-        insertRunButton.isEnabled = enabled
+        insertRunButton.isEnabled = enabled && hasCurrentStep
         if (!preserveImplState) {
-            generateImplButton.isEnabled = enabled && lastTestCode != null
+            generateImplButton.isEnabled = enabled && stepStatus == ImplementationStepStatus.TEST_GENERATED
             copyButton.isEnabled = enabled && outputEditor.document.text.isNotBlank()
         }
         LOG.debug("Setting implementation buttons enabled: $enabled")
