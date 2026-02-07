@@ -8,6 +8,7 @@ plugins {
     kotlin("plugin.serialization") version "2.0.10"
     id("org.jetbrains.kotlinx.kover") version "0.9.5"
     id("org.jetbrains.intellij.platform") version "2.11.0"
+    id("info.solidsoft.pitest") version "1.9.11"
     id("com.diffplug.spotless") version "6.25.0"
     `maven-publish`
 }
@@ -35,6 +36,7 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
     testImplementation("io.kotest:kotest-assertions-core:5.8.0")
     testImplementation("io.mockk:mockk:1.13.9")
+    pitest("org.pitest:pitest-junit5-plugin:1.2.1")
 }
 
 spotless {
@@ -84,6 +86,22 @@ intellijPlatform {
 tasks.named<org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask>("runIde") {
     jvmArguments.add("-Didea.kotlin.plugin.use.k2=false")
     args("C:\\Users\\Dan\\IdeaProjects\\untitled2")
+}
+
+pitest {
+    pitestVersion.set("1.16.1")
+    targetClasses.set(listOf("dev.agent.workflow.*"))
+    targetTests.set(listOf("dev.agent.workflow.*"))
+    junit5PluginVersion.set("1.2.1")
+    threads.set(2)
+    outputFormats.set(listOf("HTML", "XML"))
+    timestampedReports.set(false)
+}
+
+tasks.register("mutationTest") {
+    group = "verification"
+    description = "Runs mutation testing using PIT"
+    dependsOn("pitest")
 }
 
 tasks.register<JavaExec>("workflowCli") {
